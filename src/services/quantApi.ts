@@ -324,6 +324,82 @@ export const INITIAL_CANDIDATE_SIGNALS: import("../types/quant").SignalItem[] = 
   },
 ];
 
+export async function runRealValidation(
+  signalId: string,
+  cvFolds: number = 5,
+  embargoPct: number = 0.01,
+  nTrials: number = 50
+) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+    const response = await fetch("http://127.0.0.1:8000/api/v1/signals/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        signalId,
+        cvFolds,
+        embargoPct,
+        nTrials
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Validation failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Real validation error:", error);
+    throw error;
+  }
+}
+
+export async function runRealBacktest(params: {
+  signalId: string;
+  ticker?: string;
+  startDate?: string;
+  endDate?: string;
+  profitTargetPct?: number;
+  stopLossPct?: number;
+  maxHoldingPeriods?: number;
+}) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+    const response = await fetch("http://127.0.0.1:8000/api/v1/backtest/real", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        signalId: params.signalId,
+        ticker: params.ticker || "^NSEI",
+        startDate: params.startDate || "2020-01-01",
+        endDate: params.endDate || "2024-12-31",
+        profitTargetPct: params.profitTargetPct || 0.02,
+        stopLossPct: params.stopLossPct || 0.01,
+        maxHoldingPeriods: params.maxHoldingPeriods || 5,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Backtest failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Real backtest error:", error);
+    throw error;
+  }
+}
+
 export const INITIAL_VALIDATED_SIGNALS: import("../types/quant").SignalItem[] = [
   {
     id: "sig-val-1",

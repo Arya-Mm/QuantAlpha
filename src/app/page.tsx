@@ -81,10 +81,65 @@ export default function OverviewDashboard() {
       "6/6: Compiling Executive Tearsheet Report...",
     ];
 
-    for (let i = 0; i < stages.length; i++) {
-      setPipelineActiveIndex(i);
-      setPipelineProgress(stages[i]);
-      await new Promise((r) => setTimeout(r, 450));
+    try {
+      // Stage 1: Data Ingestion
+      setPipelineActiveIndex(0);
+      setPipelineProgress(stages[0]);
+      await new Promise((r) => setTimeout(r, 800));
+
+      // Stage 2: Feature Extraction
+      setPipelineActiveIndex(1);
+      setPipelineProgress(stages[1]);
+      await new Promise((r) => setTimeout(r, 800));
+
+      // Stage 3: REAL Validation - Call the backend
+      setPipelineActiveIndex(2);
+      setPipelineProgress(stages[2]);
+      
+      const { runRealBacktest } = await import("../services/quantApi");
+      const backtestResult = await runRealBacktest({
+        signalId: "sig-1",
+        ticker: "^NSEI",
+        startDate: "2020-01-01",
+        endDate: "2024-12-31",
+        profitTargetPct: 0.02,
+        stopLossPct: 0.01,
+        maxHoldingPeriods: 5,
+      });
+
+      // Stage 4: Backtest
+      setPipelineActiveIndex(3);
+      setPipelineProgress(stages[3]);
+      await new Promise((r) => setTimeout(r, 800));
+
+      // Stage 5: Portfolio Optimization
+      setPipelineActiveIndex(4);
+      setPipelineProgress(stages[4]);
+      await new Promise((r) => setTimeout(r, 800));
+
+      // Stage 6: Report Generation
+      setPipelineActiveIndex(5);
+      setPipelineProgress(stages[5]);
+      await new Promise((r) => setTimeout(r, 800));
+
+      // Show success with real results
+      if (backtestResult?.validation) {
+        setPipelineProgress(
+          `✓ Complete! Validation: ${backtestResult.validation.status} | ` +
+          `Sharpe: ${backtestResult.validation.sharpe_ratio} | ` +
+          `PBO: ${backtestResult.validation.pbo} | ` +
+          `DSR: ${backtestResult.validation.dsr}`
+        );
+      } else {
+        setPipelineProgress("✓ Pipeline Complete (Backend offline - using fallback)");
+      }
+
+      await new Promise((r) => setTimeout(r, 3000));
+
+    } catch (error) {
+      console.error("Pipeline error:", error);
+      setPipelineProgress("✗ Pipeline error - check backend connection");
+      await new Promise((r) => setTimeout(r, 3000));
     }
 
     setPipelineProgress(null);
@@ -297,13 +352,13 @@ export default function OverviewDashboard() {
             </div>
           </div>
           {/* Live Market Quick Ticker Header */}
-          <div className="hidden xl:flex items-center gap-4 bg-[#f8f8f6] px-3 py-1.5 rounded-lg border border-[#e5e5df]">
-            {Object.values(liveMarket.quotes).slice(0, 4).map((q) => (
-              <div key={q.symbol} className="flex items-center gap-2 text-xs">
-                <span className="font-semibold text-stone-700">{q.symbol}</span>
-                <span className="font-mono font-bold text-stone-900">₹{q.price.toLocaleString("en-IN")}</span>
-                <span className={`font-mono text-[10px] font-bold px-1 py-0.2 rounded ${q.change >= 0 ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50"}`}>
-                  {q.change >= 0 ? "+" : ""}{q.changePct}%
+          <div className="hidden xl:flex items-center gap-2 bg-[#f8f8f6] px-2 py-1.5 rounded-lg border border-[#e5e5df]">
+            {Object.values(liveMarket.quotes).slice(0, 3).map((q) => (
+              <div key={q.symbol} className="flex items-center gap-1.5 text-xs">
+                <span className="font-semibold text-stone-700 text-[10px]">{q.symbol.split(' ')[0]}</span>
+                <span className="font-mono font-bold text-stone-900 text-[11px]">₹{q.price.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
+                <span className={`font-mono text-[9px] font-bold px-1 py-0.5 rounded ${q.change >= 0 ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50"}`}>
+                  {q.change >= 0 ? "+" : ""}{q.changePct.toFixed(1)}%
                 </span>
               </div>
             ))}
@@ -311,7 +366,7 @@ export default function OverviewDashboard() {
 
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-4">
-              <div className="text-right">
+              <div className="text-right min-w-[140px]">
                 <span className="font-label-caps text-[10px] text-stone-500 uppercase tracking-wider font-semibold block mb-0.5">
                   {liveMarket.isLiveFeed ? "FastAPI Live Feed" : "System Status"}
                 </span>
@@ -323,16 +378,16 @@ export default function OverviewDashboard() {
                   {liveMarket.isLiveFeed ? "LIVE (NSE)" : "Online"}
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-right min-w-[100px]">
                 <span className="font-label-caps text-[10px] text-stone-500 uppercase tracking-wider font-semibold block mb-0.5">
                   Last Tick
                 </span>
-                <div className="flex items-center justify-end gap-1 font-body-sm text-body-sm text-stone-700 font-medium font-mono text-xs">
+                <div className="flex items-center justify-end gap-1 font-body-sm text-body-sm text-stone-700 font-medium font-mono text-xs tabular-nums">
                   {liveMarket.lastUpdate}
                 </div>
               </div>
             </div>
-            <div className="w-8 h-8 rounded-full bg-orange-100 border border-orange-300 flex items-center justify-center font-headline-md text-xs font-bold text-orange-700 shadow-2xs">
+            <div className="w-8 h-8 rounded-full bg-orange-100 border border-orange-300 flex items-center justify-center font-headline-md text-xs font-bold text-orange-700 shadow-2xs flex-shrink-0">
               QA
             </div>
           </div>
@@ -427,38 +482,38 @@ export default function OverviewDashboard() {
           </div>
 
           {/* Key Metrics Row */}
-          <div className="card-panel p-5 flex justify-between items-center bg-white divide-x divide-[#f0f0ec] tracking-tight shadow-xs">
-            <div className="px-4 first:pl-0">
+          <div className="card-panel p-5 grid grid-cols-4 lg:grid-cols-8 gap-4 bg-white tracking-tight shadow-xs">
+            <div className="text-center">
               <div className="metric-label">Validated Signals</div>
-              <div className="metric-value text-stone-900">7 / 18</div>
+              <div className="metric-value text-stone-900 tabular-nums">7 / 18</div>
             </div>
-            <div className="px-4">
+            <div className="text-center">
               <div className="metric-label">Best OOS Sharpe</div>
-              <div className="metric-value text-emerald-600">{currentMetrics.sharpe}</div>
+              <div className="metric-value text-emerald-600 tabular-nums">{currentMetrics.sharpe}</div>
             </div>
-            <div className="px-4">
+            <div className="text-center">
               <div className="metric-label">Deflated Sharpe</div>
-              <div className="metric-value text-emerald-600">{currentMetrics.dsr}</div>
+              <div className="metric-value text-emerald-600 tabular-nums">{currentMetrics.dsr}</div>
             </div>
-            <div className="px-4">
+            <div className="text-center">
               <div className="metric-label">PBO</div>
-              <div className="metric-value text-emerald-600">0.12</div>
+              <div className="metric-value text-emerald-600 tabular-nums">0.12</div>
             </div>
-            <div className="px-4">
+            <div className="text-center">
               <div className="metric-label">ICIR</div>
-              <div className="metric-value text-emerald-600">0.61</div>
+              <div className="metric-value text-emerald-600 tabular-nums">0.61</div>
             </div>
-            <div className="px-4">
+            <div className="text-center">
               <div className="metric-label">Max Drawdown</div>
-              <div className="metric-value text-rose-600">{currentMetrics.mdd}</div>
+              <div className="metric-value text-rose-600 tabular-nums">{currentMetrics.mdd}</div>
             </div>
-            <div className="px-4">
-              <div className="metric-label">Annualized Return</div>
-              <div className="metric-value text-orange-600">{currentMetrics.annReturn}</div>
+            <div className="text-center">
+              <div className="metric-label">Ann. Return</div>
+              <div className="metric-value text-orange-600 tabular-nums">{currentMetrics.annReturn}</div>
             </div>
-            <div className="px-4 last:pr-0">
-              <div className="metric-label">Annualized Vol</div>
-              <div className="metric-value text-stone-900">{currentMetrics.annVol}</div>
+            <div className="text-center">
+              <div className="metric-label">Ann. Vol</div>
+              <div className="metric-value text-stone-900 tabular-nums">{currentMetrics.annVol}</div>
             </div>
           </div>
 

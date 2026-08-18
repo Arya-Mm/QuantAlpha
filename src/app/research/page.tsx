@@ -20,28 +20,52 @@ export default function Research() {
     setIsValidating(true);
 
     const steps = [
-      "1/4: Purging overlapping label windows (eliminating lookahead bias)...",
-      "2/4: Applying dynamic embargo (tau = 5 business days)...",
-      "3/4: Generating Combinatorial Purged K-Fold paths (CPCV, N=16)...",
-      "4/4: Computing Deflated Sharpe Ratio (DSR) & BHY FDR adjustment...",
+      "1/5: Generating triple-barrier labels from price history...",
+      "2/5: Purging overlapping label windows (eliminating lookahead bias)...",
+      "3/5: Applying dynamic embargo (τ = 1% of dataset)...",
+      "4/5: Generating Combinatorial Purged K-Fold paths (CPCV)...",
+      "5/5: Computing Deflated Sharpe Ratio (DSR) & PBO validation...",
     ];
 
     for (let i = 0; i < steps.length; i++) {
       setValidationStep(steps[i]);
-      await new Promise((res) => setTimeout(res, 500));
+      await new Promise((res) => setTimeout(res, 800));
     }
 
-    // Graduate top candidate to validated
-    const topCandidate = candidates[0];
-    if (topCandidate) {
-      const graduatedSignal: SignalItem = {
-        ...topCandidate,
-        status: "Passed Validation",
-        id: `val-${Date.now()}`,
-        code: `val_${topCandidate.code.slice(4)}`,
-      };
-      setValidated((prev) => [graduatedSignal, ...prev]);
-      setCandidates((prev) => prev.slice(1));
+    // Call REAL validation API
+    try {
+      const topCandidate = candidates[0];
+      if (!topCandidate) {
+        setIsValidating(false);
+        setValidationStep(null);
+        return;
+      }
+
+      setValidationStep("Running real validation engine...");
+      
+      const { runRealValidation } = await import("../../services/quantApi");
+      const result = await runRealValidation(topCandidate.id, 5, 0.01, 50);
+
+      if (result.status === "APPROVED") {
+        // Graduate to validated
+        const graduatedSignal: SignalItem = result.signal;
+        setValidated((prev) => [graduatedSignal, ...prev]);
+        setCandidates((prev) => prev.filter(s => s.id !== topCandidate.id));
+        
+        setValidationStep(`✓ APPROVED: DSR=${result.validation_details.dsr.toFixed(2)}, PBO=${result.validation_details.pbo.toFixed(2)}`);
+      } else {
+        // Validation failed
+        setValidationStep(`✗ REJECTED: ${result.rejection_reasons.pbo_failed ? 'PBO failed' : ''} ${result.rejection_reasons.dsr_failed ? 'DSR failed' : ''}`);
+        setCandidates((prev) => prev.map(s => 
+          s.id === topCandidate.id ? { ...s, status: "FDR Rejected" as const } : s
+        ));
+      }
+
+      await new Promise((res) => setTimeout(res, 3000));
+    } catch (error) {
+      console.error("Validation failed:", error);
+      setValidationStep("✗ Validation engine error - check backend connection");
+      await new Promise((res) => setTimeout(res, 3000));
     }
 
     setValidationStep(null);
