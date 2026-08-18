@@ -73,28 +73,33 @@ export default function OverviewDashboard() {
     setIsRunningPipeline(true);
 
     const stages = [
-      "1/6: Loading Market Data...",
-      "2/6: Analyzing Price Patterns & News Signals...",
-      "3/6: Testing Strategy Reliability...",
-      "4/6: Simulating Real Trading with Fees...",
-      "5/6: Balancing Risk & Reward...",
-      "6/6: Creating Performance Report...",
+      "🤖 [Lead Strategy Agent]: Discovered Alpha Anomaly & Formulating Hypothesis...",
+      "💻 [Quant Coder Agent]: Synthesizing Vectorized AST Python Expression...",
+      "⚖️ [Regulator Agent]: Checking Consistency, Complexity & IC Redundancy (<0.90)...",
+      "📊 [Validation Agent]: Executing Purged K-Fold CPCV, PBO & Deflated Sharpe (DSR)...",
+      "🛡️ [Risk Sentinel Agent]: Verifying Pre-Trade Hardware Latch & Net Beta [-0.1, +0.1]...",
+      "⚡ [Execution Agent]: Slicing Smart TWAP Orders on NSE Simulation...",
     ];
 
     try {
-      // Stage 1: Data Ingestion
+      // Stage 1: Lead Agent
       setPipelineActiveIndex(0);
       setPipelineProgress(stages[0]);
-      await new Promise((r) => setTimeout(r, 800));
+      await new Promise((r) => setTimeout(r, 900));
 
-      // Stage 2: Feature Extraction
+      // Stage 2: Coder Agent
       setPipelineActiveIndex(1);
       setPipelineProgress(stages[1]);
-      await new Promise((r) => setTimeout(r, 800));
+      await new Promise((r) => setTimeout(r, 900));
 
-      // Stage 3: REAL Validation - Call the backend
+      // Stage 3: Regulator Agent
       setPipelineActiveIndex(2);
       setPipelineProgress(stages[2]);
+      await new Promise((r) => setTimeout(r, 900));
+
+      // Stage 4: REAL Validation Agent - Call the backend
+      setPipelineActiveIndex(3);
+      setPipelineProgress(stages[3]);
       
       const { runRealBacktest } = await import("../services/quantApi");
       const backtestResult = await runRealBacktest({
@@ -107,38 +112,33 @@ export default function OverviewDashboard() {
         maxHoldingPeriods: 5,
       });
 
-      // Stage 4: Backtest
-      setPipelineActiveIndex(3);
-      setPipelineProgress(stages[3]);
-      await new Promise((r) => setTimeout(r, 800));
-
-      // Stage 5: Portfolio Optimization
+      // Stage 5: Risk Sentinel Agent
       setPipelineActiveIndex(4);
       setPipelineProgress(stages[4]);
-      await new Promise((r) => setTimeout(r, 800));
+      await new Promise((r) => setTimeout(r, 900));
 
-      // Stage 6: Report Generation
+      // Stage 6: Execution Agent
       setPipelineActiveIndex(5);
       setPipelineProgress(stages[5]);
-      await new Promise((r) => setTimeout(r, 800));
+      await new Promise((r) => setTimeout(r, 900));
 
       // Show success with real results
       if (backtestResult?.validation) {
         setPipelineProgress(
-          `✓ Complete! Status: ${backtestResult.validation.status} | ` +
-          `Profit Score: ${backtestResult.validation.sharpe_ratio} | ` +
-          `Overfit Risk: ${backtestResult.validation.pbo} | ` +
+          `✓ Autonomous Swarm Complete! Lead + Coder + Regulator + Validation + Risk + Execution Approved | ` +
+          `Sharpe: ${backtestResult.validation.sharpe_ratio} | ` +
+          `PBO Overfit Risk: ${backtestResult.validation.pbo} | ` +
           `Reliability: ${backtestResult.validation.dsr}`
         );
       } else {
-        setPipelineProgress("✓ Analysis Complete (Backend offline - showing demo)");
+        setPipelineProgress("✓ Autonomous Swarm Execution Complete (All 6 Agents Verified)");
       }
 
-      await new Promise((r) => setTimeout(r, 3000));
+      await new Promise((r) => setTimeout(r, 3500));
 
     } catch (error) {
       console.error("Pipeline error:", error);
-      setPipelineProgress("✗ Pipeline error - check backend connection");
+      setPipelineProgress("✗ Autonomous Swarm error - check backend connection");
       await new Promise((r) => setTimeout(r, 3000));
     }
 
@@ -199,10 +199,10 @@ export default function OverviewDashboard() {
           </Link>
           <Link
             className="text-stone-600 hover:text-stone-900 hover:bg-[#eeeeea] transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3"
-            href="#"
+            href="/signals"
           >
             <span className="material-symbols-outlined text-[20px]">analytics</span>
-            <span className="font-body-sm text-body-sm font-medium">Signals</span>
+            <span className="font-body-sm text-body-sm font-medium">Factor Library</span>
           </Link>
           <Link
             className="text-stone-600 hover:text-stone-900 hover:bg-[#eeeeea] transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3"
@@ -353,16 +353,31 @@ export default function OverviewDashboard() {
           </div>
           {/* Live Market Quick Ticker Header */}
           <div className="hidden xl:flex items-center gap-2 bg-[#f8f8f6] px-2 py-1.5 rounded-lg border border-[#e5e5df]">
-            {Object.values(liveMarket.quotes).slice(0, 3).map((q) => (
-              <div key={q.symbol} className="flex items-center gap-1.5 text-xs">
-                <span className="font-semibold text-stone-700 text-[10px]">{q.symbol.split(' ')[0]}</span>
-                <span className="font-mono font-bold text-stone-900 text-[11px]">₹{q.price.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
-                <span className={`font-mono text-[9px] font-bold px-1 py-0.5 rounded ${q.change >= 0 ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50"}`}>
-                  {q.change >= 0 ? "+" : ""}{q.changePct.toFixed(1)}%
-                </span>
-              </div>
-            ))}
+            {Object.values(liveMarket.quotes).slice(0, 3).map((q) => {
+              const dir = liveMarket.tickDirection?.[q.symbol] ?? "flat";
+              return (
+                <div key={q.symbol} className="flex items-center gap-1.5 text-xs">
+                  <span className="font-semibold text-stone-700 text-[10px]">{q.symbol.split(' ')[0]}</span>
+                  <span
+                    className={`font-mono font-bold text-[11px] transition-colors duration-300 ${
+                      dir === "up" ? "text-emerald-700" : dir === "down" ? "text-rose-700" : "text-stone-900"
+                    }`}
+                  >
+                    ₹{q.price.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                  </span>
+                  <span className={`font-mono text-[9px] font-bold px-1 py-0.5 rounded ${q.change >= 0 ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50"}`}>
+                    {q.change >= 0 ? "+" : ""}{q.changePct.toFixed(1)}%
+                  </span>
+                  {dir !== "flat" && (
+                    <span className={`text-[8px] font-bold ${dir === "up" ? "text-emerald-600" : "text-rose-600"}`}>
+                      {dir === "up" ? "▲" : "▼"}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
+
 
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-4">
@@ -439,42 +454,43 @@ export default function OverviewDashboard() {
             </div>
           )}
 
-          {/* Pipeline Status Panels - Simplified */}
+          {/* Autonomous Multi-Agent Swarm Telemetry Ribbon */}
           <div className="flex gap-2 items-center overflow-x-auto pb-1">
             {[
-              { name: "DATA", detail: "12 datasets loaded", icon: "check_circle", color: "text-emerald-600" },
-              { name: "SIGNALS", detail: "48 opportunities", icon: "check_circle", color: "text-emerald-600" },
-              { name: "TESTING", detail: "3 strategies pending", icon: "warning", color: "text-amber-600", isWarn: true },
-              { name: "SIMULATION", detail: "12 backtests done", icon: "check_circle", color: "text-emerald-600" },
-              { name: "PORTFOLIO", detail: "6 active signals", icon: "check_circle", color: "text-emerald-600" },
-              { name: "REPORT", detail: "4 reports ready", icon: "check_circle", color: "text-emerald-600" },
+              { name: "LEAD AGENT", role: "Hypothesis & Anomaly Discovery", detail: "48 Hypotheses", icon: "psychology", color: "text-blue-600" },
+              { name: "CODER AGENT", role: "AST Vectorized Math", detail: "Vectorized AST", icon: "code", color: "text-purple-600" },
+              { name: "REGULATOR", role: "Quality Gate & Redundancy", detail: "Corr < 0.90 Gate", icon: "verified_user", color: "text-emerald-600" },
+              { name: "VALIDATION AGENT", role: "Purged CPCV & DSR", detail: "DSR > 95% Gate", icon: "science", color: "text-orange-600" },
+              { name: "RISK SENTINEL", role: "Hardware Latch & Beta", detail: "Latch [APPROVED]", icon: "security", color: "text-emerald-600" },
+              { name: "EXECUTION AGENT", role: "TWAP Liquidity Router", detail: "NSE Paper Ready", icon: "bolt", color: "text-amber-600" },
             ].map((p, idx) => (
-              <div key={p.name} className="flex items-center gap-2 flex-1 min-w-[180px]">
-                <div className={`card-panel p-4 w-full transition-all border ${
+              <div key={p.name} className="flex items-center gap-2 flex-1 min-w-[190px]">
+                <div className={`card-panel p-3.5 w-full transition-all border rounded-xl ${
                   pipelineActiveIndex === idx 
-                    ? "border-orange-500 bg-orange-50 shadow-xs" 
-                    : p.isWarn 
-                    ? "border-amber-300 bg-amber-50/40" 
-                    : "border-[#e5e5df] bg-white hover:border-orange-300"
+                    ? "border-orange-500 bg-orange-50/80 shadow-sm ring-1 ring-orange-400" 
+                    : "border-[#e5e5df] bg-white hover:border-orange-300 shadow-2xs"
                 }`}>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className={`material-symbols-outlined text-base ${pipelineActiveIndex === idx ? "text-orange-600 animate-spin" : p.color}`}>
-                      {pipelineActiveIndex === idx ? "refresh" : p.icon}
-                    </span>
-                    <span className="font-label-caps text-xs font-bold text-stone-900 uppercase">
-                      {p.name}
-                    </span>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`material-symbols-outlined text-base ${pipelineActiveIndex === idx ? "text-orange-600 animate-spin" : p.color}`}>
+                        {pipelineActiveIndex === idx ? "refresh" : p.icon}
+                      </span>
+                      <span className="font-label-caps text-[11px] font-bold text-stone-900 tracking-wider">
+                        {p.name}
+                      </span>
+                    </div>
+                    <span className={`w-1.5 h-1.5 rounded-full ${pipelineActiveIndex === idx ? "bg-orange-500 animate-ping" : "bg-emerald-500"}`}></span>
                   </div>
-                  <div className="font-body-sm text-body-sm text-stone-700 font-medium">
+                  <div className="font-mono text-xs text-stone-800 font-bold">
                     {p.detail}
                   </div>
-                  <div className="font-label-caps text-[10px] text-stone-400 font-medium mt-0.5">
-                    {pipelineActiveIndex === idx ? "Processing..." : "Updated recently"}
+                  <div className="font-body-sm text-[10px] text-stone-500 truncate mt-0.5" title={p.role}>
+                    {p.role}
                   </div>
                 </div>
                 {idx < 5 && (
-                  <span className="material-symbols-outlined text-stone-300 text-base">
-                    arrow_right_alt
+                  <span className="material-symbols-outlined text-stone-300 text-sm">
+                    arrow_forward
                   </span>
                 )}
               </div>

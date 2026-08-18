@@ -1,9 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { SignalItem, SignalCategory } from "../../types/quant";
 import { INITIAL_CANDIDATE_SIGNALS, INITIAL_VALIDATED_SIGNALS } from "../../services/quantApi";
+
+interface DiscoveryLogLine {
+  id: number;
+  type: "info" | "success" | "rejected" | "error" | "complete";
+  message: string;
+  timestamp: string;
+}
 
 export default function Research() {
   const [candidates, setCandidates] = useState<SignalItem[]>(INITIAL_CANDIDATE_SIGNALS);
@@ -14,6 +21,103 @@ export default function Research() {
   const [validationStep, setValidationStep] = useState<string | null>(null);
   const [showMethodologyModal, setShowMethodologyModal] = useState(false);
   const [inspectingSignal, setInspectingSignal] = useState<SignalItem | null>(null);
+
+  // Signal Discovery Terminal state
+  const [showDiscoveryTerminal, setShowDiscoveryTerminal] = useState(false);
+  const [isDiscovering, setIsDiscovering] = useState(false);
+  const [discoveryLog, setDiscoveryLog] = useState<DiscoveryLogLine[]>([]);
+  const [discoveryComplete, setDiscoveryComplete] = useState(false);
+  const terminalEndRef = useRef<HTMLDivElement>(null);
+  const logIdRef = useRef(0);
+
+  // Auto-scroll terminal to bottom
+  useEffect(() => {
+    terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [discoveryLog]);
+
+  const handleRunDiscovery = async () => {
+    if (isDiscovering) return;
+    setShowDiscoveryTerminal(true);
+    setIsDiscovering(true);
+    setDiscoveryComplete(false);
+    setDiscoveryLog([]);
+
+    const addLine = (type: DiscoveryLogLine["type"], message: string) => {
+      const id = ++logIdRef.current;
+      const timestamp = new Date().toLocaleTimeString("en-IN", { hour12: false });
+      setDiscoveryLog(prev => [...prev, { id, type, message, timestamp }]);
+    };
+
+    addLine("info", "Connecting to Signal Discovery Engine...");
+
+    try {
+      const es = new EventSource(
+        "http://127.0.0.1:8000/api/v1/signals/discover/stream?start_date=2021-01-01&end_date=2024-12-31"
+      );
+
+      es.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data) as {
+            stage: string;
+            type: string;
+            message: string;
+            data?: {
+              signals?: SignalItem[];
+              approved_count?: number;
+              total_count?: number;
+            };
+          };
+          const lineType = (payload.type === "success" ? "success"
+            : payload.type === "rejected" ? "rejected"
+            : payload.type === "error" ? "error"
+            : payload.type === "complete" ? "complete"
+            : "info") as DiscoveryLogLine["type"];
+
+          addLine(lineType, payload.message);
+
+          if (payload.stage === "complete" && payload.data?.signals) {
+            // Promote approved signals to candidates board
+            const newSignals = payload.data.signals as SignalItem[];
+            setCandidates(prev => {
+              const existingIds = new Set(prev.map(s => s.name));
+              const fresh = newSignals.filter(s => !existingIds.has(s.name));
+              return [...fresh, ...prev];
+            });
+            setDiscoveryComplete(true);
+            setIsDiscovering(false);
+            es.close();
+          }
+        } catch { /* ignore */ }
+      };
+
+      es.onerror = () => {
+        addLine("error", "Backend not reachable — running local signal simulation...");
+        // Simulate discovery locally as fallback
+        const simulatedSignals = [
+          { name: "MOM_CROSS_V4", dsr: 0.96, pbo: 0.12, sharpe: 1.84, type: "success" as const,
+            msg: "[1/3] ✓ APPROVED: MOM_CROSS_V4 | OOS Sharpe=1.84 | DSR=0.960 | PBO=0.120 | CPCV paths: 4/5 profitable" },
+          { name: "PAIR_COINT_ARB", dsr: 0.94, pbo: 0.14, sharpe: 1.92, type: "success" as const,
+            msg: "[2/3] ✓ APPROVED: PAIR_COINT_ARB | OOS Sharpe=1.92 | DSR=0.940 | PBO=0.140 | CPCV paths: 3/5 profitable" },
+          { name: "MACRO_YIELD_CURVE", dsr: 0.88, pbo: 0.52, sharpe: 0.72, type: "rejected" as const,
+            msg: "[3/3] ✗ REJECTED: MACRO_YIELD_CURVE | PBO=0.520 ≥ 0.50 (overfit risk) | DSR=0.880 ≤ 0.90 (low reliability)" },
+        ];
+        let delay = 1200;
+        simulatedSignals.forEach((sig) => {
+          setTimeout(() => addLine(sig.type, sig.msg), delay);
+          delay += 1500;
+        });
+        setTimeout(() => {
+          addLine("complete", "Discovery pipeline complete. 2/3 signals approved. Promoting to candidate board...");
+          setDiscoveryComplete(true);
+          setIsDiscovering(false);
+        }, delay + 500);
+        es.close();
+      };
+    } catch (e) {
+      addLine("error", `Failed to start discovery: ${e}`);
+      setIsDiscovering(false);
+    }
+  };
 
   const handleRunValidation = async () => {
     if (isValidating || candidates.length === 0) return;
@@ -366,12 +470,12 @@ export default function Research() {
 
           <Link
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-stone-600 hover:bg-[#eeeeea] hover:text-stone-900 transition-colors"
-            href="#"
+            href="/signals"
           >
             <span className="material-symbols-outlined text-[20px]">
               analytics
             </span>
-            <span className="font-body-sm text-body-sm font-medium">Signals</span>
+            <span className="font-body-sm text-body-sm font-medium">Factor Library</span>
           </Link>
 
           <Link
@@ -517,6 +621,16 @@ export default function Research() {
             >
               <span className="material-symbols-outlined text-[16px]">menu_book</span>
               Methodology
+            </button>
+            <button 
+              onClick={handleRunDiscovery}
+              disabled={isDiscovering}
+              className={`border border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100 transition-colors px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-2xs font-body-sm text-xs font-semibold cursor-pointer active:scale-95 ${isDiscovering ? "opacity-75 cursor-not-allowed" : ""}`}
+            >
+              <span className={`material-symbols-outlined text-[16px] ${isDiscovering ? "animate-spin" : ""}`}>
+                {isDiscovering ? "refresh" : "rocket_launch"}
+              </span>
+              {isDiscovering ? "Discovering Signals..." : "Run Signal Discovery"}
             </button>
             <button 
               onClick={handleRunValidation}
@@ -773,6 +887,75 @@ export default function Research() {
           </div>
         </section>
       </main>
+      {/* Signal Discovery Terminal Drawer */}
+      {showDiscoveryTerminal && (
+        <div className="fixed bottom-0 left-60 right-0 z-30 transition-all duration-300">
+          {/* Terminal Header */}
+          <div className="bg-stone-900 border-t border-stone-700 px-4 py-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-rose-500" />
+                <div className="w-3 h-3 rounded-full bg-amber-500" />
+                <div className="w-3 h-3 rounded-full bg-emerald-500" />
+              </div>
+              <span className="font-mono text-xs text-stone-300 font-semibold tracking-wider">
+                SIGNAL DISCOVERY ENGINE — CPCV + PBO + DSR PIPELINE
+              </span>
+              {isDiscovering && (
+                <span className="flex items-center gap-1.5 text-[10px] text-amber-400 font-mono font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  RUNNING
+                </span>
+              )}
+              {discoveryComplete && (
+                <span className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-mono font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  COMPLETE
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {!isDiscovering && (
+                <button
+                  onClick={handleRunDiscovery}
+                  className="text-[10px] font-mono text-stone-400 hover:text-white px-2 py-1 border border-stone-700 rounded transition-colors cursor-pointer"
+                >
+                  Re-run
+                </button>
+              )}
+              <button
+                onClick={() => setShowDiscoveryTerminal(false)}
+                className="text-stone-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Terminal Body */}
+          <div className="bg-[#0d1117] h-52 overflow-y-auto px-4 py-3 font-mono text-xs border-t border-stone-800">
+            {discoveryLog.length === 0 && (
+              <div className="text-stone-600 animate-pulse">Initializing pipeline...</div>
+            )}
+            {discoveryLog.map((line) => (
+              <div key={line.id} className="flex gap-3 mb-1 leading-relaxed">
+                <span className="text-stone-600 shrink-0 select-none">{line.timestamp}</span>
+                <span className="text-stone-500 shrink-0 select-none">›</span>
+                <span className={
+                  line.type === "success" ? "text-emerald-400" :
+                  line.type === "rejected" ? "text-rose-400" :
+                  line.type === "error" ? "text-red-400" :
+                  line.type === "complete" ? "text-cyan-400 font-semibold" :
+                  "text-stone-300"
+                }>
+                  {line.message}
+                </span>
+              </div>
+            ))}
+            <div ref={terminalEndRef} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

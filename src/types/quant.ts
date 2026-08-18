@@ -87,8 +87,54 @@ export interface SignalItem {
   maxDrawdown: number;
   dsr: number;
   pbo: number;
-  status: "Passed Validation" | "Backtest Running" | "Awaiting Data" | "FDR Rejected";
+  status: "Passed Validation" | "Backtest Running" | "Awaiting Data" | "FDR Rejected" | "Failed Quality Check";
   description: string;
   formula: string;
+}
+
+export type FactorQuality = "sota" | "high" | "candidate" | "low";
+export type EvolutionPhase = "original" | "mutation" | "crossover";
+
+export interface FactorItem {
+  factor_id: string;
+  factor_name: string;
+  category: string;
+  factor_description: string;
+  factor_formulation: string;
+  factor_expression: string;
+  factor_implementation_code: string;
+  hypothesis: string;
+  evolution_phase: EvolutionPhase;
+  round_number: number;
+  trajectory_id: string;
+  parent_trajectory_ids: string[];
+  quality: FactorQuality;
+  ic: number;
+  rank_ic: number;
+  icir: number;
+  rank_icir: number;
+  annual_return: number;
+  sharpe_ratio: number;
+  max_drawdown: number;
+  information_ratio: number;
+  dsr: number;
+  pbo: number;
+  created_at?: string;
+}
+
+export interface FactorLibraryStats {
+  total_factors: number;
+  sota_factors: number;
+  high_quality_factors: number;
+  avg_ic: number;
+  avg_rank_ic: number;
+  avg_sharpe: number;
+  avg_ir: number;
+  total_trajectories: number;
+  evolution_phases: {
+    original: number;
+    mutation: number;
+    crossover: number;
+  };
 }
 

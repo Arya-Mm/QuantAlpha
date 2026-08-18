@@ -24,36 +24,63 @@ export default function CommandCenter() {
 
     const interval = setInterval(() => {
       const relQuote = liveMarket.quotes["RELIANCE"] || { price: 3012.40 };
+      const tcsQuote = liveMarket.quotes["TCS"] || { price: 3985.00 };
+      const hdfcQuote = liveMarket.quotes["HDFCBANK"] || { price: 1642.50 };
+
       const sampleEvents: ActivityLogEvent[] = [
         {
           id: `evt-${Date.now()}-1`,
           timestamp: new Date().toLocaleTimeString("en-IN", { hour12: false }),
           agent: "Execution",
-          action: "TWAP Slice #4 filled (NSE Paper)",
-          evidence: `12 RELIANCE @ ₹${relQuote.price.toLocaleString("en-IN")} (Arrival Slip: +0.02 bps)`,
+          action: "TWAP Slice #4 filled on NSE Paper Router",
+          evidence: `15 RELIANCE @ ₹${relQuote.price.toLocaleString("en-IN")} (Arrival Slippage: +0.02 bps)`,
           status: "success",
         },
         {
           id: `evt-${Date.now()}-2`,
           timestamp: new Date().toLocaleTimeString("en-IN", { hour12: false }),
           agent: "Risk",
-          action: "Pre-Trade Beta check passed",
-          evidence: "Portfolio Net Beta = +0.038 (Target: [-0.1, +0.1])",
+          action: "Pre-Trade Beta & VaR constraint check passed",
+          evidence: "Portfolio Net Beta = +0.038 (Bounds: [-0.1, +0.1]) | 99% 1-Day VaR = 1.12%",
           status: "success",
         },
         {
           id: `evt-${Date.now()}-3`,
           timestamp: new Date().toLocaleTimeString("en-IN", { hour12: false }),
           agent: "Strategy",
-          action: "Scanned Momentum Breakout on NIFTY IT",
-          evidence: `TCS Price: ₹${(liveMarket.quotes["TCS"]?.price || 3985).toLocaleString("en-IN")} | FinBERT: +0.82`,
+          action: "Lead Agent: Formulated Anomaly Hypothesis on NIFTY IT",
+          evidence: `TCS Price: ₹${tcsQuote.price.toLocaleString("en-IN")} | FinBERT Sentiment Shock: +0.82`,
           status: "info",
+        },
+        {
+          id: `evt-${Date.now()}-4`,
+          timestamp: new Date().toLocaleTimeString("en-IN", { hour12: false }),
+          agent: "Strategy",
+          action: "Quant Coder Agent: Synthesized Vectorized AST Expression",
+          evidence: "Formula: Rank(Delta(Close, 5)) * (1 - Rank(Volume / RollingMean(Volume, 20)))",
+          status: "info",
+        },
+        {
+          id: `evt-${Date.now()}-5`,
+          timestamp: new Date().toLocaleTimeString("en-IN", { hour12: false }),
+          agent: "Risk",
+          action: "Regulator Agent: Quality Gate Passed (Corr < 0.90)",
+          evidence: "AST Depth = 3 <= 5 | Max Correlation with Factor Store = 0.38 < 0.90",
+          status: "success",
+        },
+        {
+          id: `evt-${Date.now()}-6`,
+          timestamp: new Date().toLocaleTimeString("en-IN", { hour12: false }),
+          agent: "Portfolio",
+          action: "Validation Agent: CPCV Fold Evaluation Complete",
+          evidence: "Purged 5-Fold CPCV: OOS Sharpe = 1.94 | DSR = 0.962 | PBO = 0.11",
+          status: "success",
         },
       ];
 
       const newEvent = sampleEvents[Math.floor(Math.random() * sampleEvents.length)];
-      setActivityLogs((prev) => [newEvent, ...prev.slice(0, 19)]);
-    }, 8000);
+      setActivityLogs((prev) => [newEvent, ...prev.slice(0, 24)]);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [mode, isHalted, liveMarket.quotes]);
@@ -180,6 +207,15 @@ export default function CommandCenter() {
               science
             </span>
             <span className="font-body-sm text-body-sm font-medium">Research</span>
+          </Link>
+          <Link
+            className="text-stone-600 hover:text-stone-900 hover:bg-[#eeeeea] transition-colors rounded-lg px-3 py-2 flex items-center gap-3"
+            href="/signals"
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              analytics
+            </span>
+            <span className="font-body-sm text-body-sm font-medium">Factor Library</span>
           </Link>
           <Link
             className="text-stone-600 hover:text-stone-900 hover:bg-[#eeeeea] transition-colors rounded-lg px-3 py-2 flex items-center gap-3"
@@ -385,22 +421,36 @@ export default function CommandCenter() {
                         </td>
                       </tr>
                     ) : (
-                      liveMarket.positions.map((pos) => (
-                        <tr key={pos.symbol} className="hover:bg-[#f5f5f2] transition-colors">
-                          <td className="py-3 px-4 font-bold font-sans text-stone-900">{pos.symbol}</td>
-                          <td className="py-3 px-4 text-stone-700">{pos.qty}</td>
-                          <td className="py-3 px-4 text-stone-600">₹{pos.entryPrice.toLocaleString("en-IN")}</td>
-                          <td className="py-3 px-4 font-bold text-stone-900">₹{pos.currentPrice.toLocaleString("en-IN")}</td>
-                          <td className={`py-3 px-4 font-bold ${pos.dayChange >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
-                            {pos.dayChange >= 0 ? "+" : ""}{pos.dayChangePct}%
-                          </td>
-                          <td className="py-3 px-4 text-stone-800">₹{pos.marketValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</td>
-                          <td className={`py-3 px-4 font-bold ${pos.unrealizedPnL >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
-                            {pos.unrealizedPnL >= 0 ? "+" : ""}₹{pos.unrealizedPnL.toLocaleString("en-IN", { maximumFractionDigits: 0 })} ({pos.pnlPct}%)
-                          </td>
-                          <td className="py-3 px-4 font-sans text-stone-600">{pos.weightPct}%</td>
-                        </tr>
-                      ))
+                      liveMarket.positions.map((pos) => {
+                        const dir = liveMarket.tickDirection?.[pos.symbol] ?? "flat";
+                        return (
+                          <tr key={pos.symbol} className="hover:bg-[#f5f5f2] transition-colors">
+                            <td className="py-3 px-4 font-bold font-sans text-stone-900 flex items-center gap-1.5">
+                              {pos.symbol}
+                              {dir !== "flat" && (
+                                <span className={`text-[9px] font-bold ${dir === "up" ? "text-emerald-600" : "text-rose-600"}`}>
+                                  {dir === "up" ? "▲" : "▼"}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-stone-700">{pos.qty}</td>
+                            <td className="py-3 px-4 text-stone-600">₹{pos.entryPrice.toLocaleString("en-IN")}</td>
+                            <td className={`py-3 px-4 font-bold transition-colors duration-300 ${
+                              dir === "up" ? "text-emerald-700" : dir === "down" ? "text-rose-700" : "text-stone-900"
+                            }`}>
+                              ₹{pos.currentPrice.toLocaleString("en-IN")}
+                            </td>
+                            <td className={`py-3 px-4 font-bold ${pos.dayChange >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                              {pos.dayChange >= 0 ? "+" : ""}{pos.dayChangePct}%
+                            </td>
+                            <td className="py-3 px-4 text-stone-800">₹{pos.marketValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</td>
+                            <td className={`py-3 px-4 font-bold ${pos.unrealizedPnL >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                              {pos.unrealizedPnL >= 0 ? "+" : ""}₹{pos.unrealizedPnL.toLocaleString("en-IN", { maximumFractionDigits: 0 })} ({pos.pnlPct}%)
+                            </td>
+                            <td className="py-3 px-4 font-sans text-stone-600">{pos.weightPct}%</td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

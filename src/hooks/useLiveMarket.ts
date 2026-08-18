@@ -178,9 +178,15 @@ const DEFAULT_STATE: LiveMarketState = {
   ],
 };
 
+export interface TickDirection {
+  [symbol: string]: "up" | "down" | "flat";
+}
+
 export function useLiveMarket() {
   const [state, setState] = useState<LiveMarketState>(DEFAULT_STATE);
+  const [tickDirection, setTickDirection] = useState<TickDirection>({});
   const [isClient, setIsClient] = useState(false);
+  const prevPricesRef = { current: {} as Record<string, number> };
 
   // Prevent hydration mismatch by only showing live data after client mount
   useEffect(() => {
@@ -189,71 +195,91 @@ export function useLiveMarket() {
 
   useEffect(() => {
     let isMounted = true;
+    let eventSource: EventSource | null = null;
+    let fallbackInterval: ReturnType<typeof setInterval> | null = null;
 
-    async function pollLiveMarket() {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
+    function applyUpdate(data: {
+      nav: number; cashBalance: number; investedCapital: number;
+      dailyPnL: number; dailyPnLPct: number; openPositionsCount: number;
+      positions: LivePosition[]; quotes: Record<string, LiveQuote>; timestamp: string;
+    }) {
+      if (!isMounted) return;
 
-        const res = await fetch("http://127.0.0.1:8000/api/v1/market/live", {
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-
-        if (res.ok && isMounted) {
-          const data = await res.json();
-          setState({
-            isConnected: true,
-            isLiveFeed: true,
-            nav: data.nav,
-            cashBalance: data.cashBalance,
-            investedCapital: data.investedCapital,
-            dailyPnL: data.dailyPnL,
-            dailyPnLPct: data.dailyPnLPct,
-            openPositionsCount: data.openPositionsCount,
-            positions: data.positions,
-            quotes: data.quotes,
-            lastUpdate: data.timestamp || new Date().toLocaleTimeString("en-IN"),
-          });
-          return;
+      // Compute tick directions
+      const newDirections: TickDirection = {};
+      for (const [sym, q] of Object.entries(data.quotes)) {
+        const prev = (prevPricesRef.current as Record<string, number>)[sym];
+        if (prev !== undefined) {
+          newDirections[sym] = q.price > prev ? "up" : q.price < prev ? "down" : "flat";
+        } else {
+          newDirections[sym] = "flat";
         }
-      } catch {
-        // Fallback: Apply realistic micro tick fluctuations so UI stays lively
-        if (isMounted) {
-          setState((prev) => {
-            const updatedQuotes: Record<string, LiveQuote> = {};
-            for (const [sym, q] of Object.entries(prev.quotes)) {
-              const delta = (Math.random() - 0.48) * (q.price * 0.0004);
-              const newPrice = Number((q.price + delta).toFixed(2));
-              const change = Number((newPrice - q.prevClose).toFixed(2));
-              const changePct = Number(((change / q.prevClose) * 100).toFixed(2));
-              updatedQuotes[sym] = {
-                ...q,
-                price: newPrice,
-                change,
-                changePct,
-                timestamp: new Date().toLocaleTimeString("en-IN"),
-              };
-            }
-            return {
-              ...prev,
-              quotes: updatedQuotes,
-              lastUpdate: new Date().toLocaleTimeString("en-IN"),
-            };
-          });
-        }
+        (prevPricesRef.current as Record<string, number>)[sym] = q.price;
       }
+      setTickDirection(newDirections);
+
+      setState({
+        isConnected: true,
+        isLiveFeed: true,
+        nav: data.nav,
+        cashBalance: data.cashBalance,
+        investedCapital: data.investedCapital,
+        dailyPnL: data.dailyPnL,
+        dailyPnLPct: data.dailyPnLPct,
+        openPositionsCount: data.openPositionsCount,
+        positions: data.positions,
+        quotes: data.quotes,
+        lastUpdate: data.timestamp || new Date().toLocaleTimeString("en-IN"),
+      });
     }
 
-    // Initial fetch
-    pollLiveMarket();
+    function startMicroTickFallback() {
+      fallbackInterval = setInterval(() => {
+        if (!isMounted) return;
+        const newDirections: TickDirection = {};
+        setState((prev) => {
+          const updatedQuotes: Record<string, LiveQuote> = {};
+          for (const [sym, q] of Object.entries(prev.quotes)) {
+            const delta = (Math.random() - 0.48) * (q.price * 0.0004);
+            const newPrice = Number((q.price + delta).toFixed(2));
+            const change = Number((newPrice - q.prevClose).toFixed(2));
+            const changePct = Number(((change / q.prevClose) * 100).toFixed(2));
+            newDirections[sym] = delta > 0 ? "up" : delta < 0 ? "down" : "flat";
+            updatedQuotes[sym] = { ...q, price: newPrice, change, changePct,
+              timestamp: new Date().toLocaleTimeString("en-IN") };
+          }
+          setTickDirection(newDirections);
+          return { ...prev, quotes: updatedQuotes,
+            lastUpdate: new Date().toLocaleTimeString("en-IN") };
+        });
+      }, 2500);
+    }
 
-    // Live polling every 2.5 seconds
-    const interval = setInterval(pollLiveMarket, 2500);
+    // Try SSE first
+    try {
+      eventSource = new EventSource("http://127.0.0.1:8000/api/v1/market/stream");
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          applyUpdate(data);
+        } catch { /* ignore parse errors */ }
+      };
+
+      eventSource.onerror = () => {
+        eventSource?.close();
+        eventSource = null;
+        // SSE failed — fall back to micro-tick simulation
+        startMicroTickFallback();
+      };
+    } catch {
+      startMicroTickFallback();
+    }
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
+      eventSource?.close();
+      if (fallbackInterval) clearInterval(fallbackInterval);
     };
   }, []);
 
@@ -261,6 +287,7 @@ export function useLiveMarket() {
   if (!isClient) {
     return {
       ...DEFAULT_STATE,
+      tickDirection: {} as TickDirection,
       lastUpdate: "Loading...",
       quotes: Object.fromEntries(
         Object.entries(DEFAULT_STATE.quotes).map(([key, quote]) => [
@@ -271,5 +298,5 @@ export function useLiveMarket() {
     };
   }
 
-  return state;
+  return { ...state, tickDirection };
 }

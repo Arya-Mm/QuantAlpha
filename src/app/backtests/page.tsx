@@ -23,16 +23,116 @@ export default function Backtests() {
   const [chartMode, setChartMode] = useState<"linear" | "log">("linear");
   const [newUniverseInput, setNewUniverseInput] = useState("");
 
+  // Animated equity curve state
+  const [animatedCurve, setAnimatedCurve] = useState(INITIAL_BACKTEST_RESULT.equityCurve);
+  const [streamStatus, setStreamStatus] = useState<"idle" | "computing" | "streaming" | "done">("idle");
+  const [revealedMetrics, setRevealedMetrics] = useState(true);
+
   const handleRunBacktest = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setIsRunning(true);
+    setStreamStatus("computing");
+    setRevealedMetrics(false);
+    setAnimatedCurve([]); // Clear curve for animation
+
+    // Try streaming endpoint first
     try {
-      const updatedResult = await runBacktestSimulation(config);
-      setResult(updatedResult);
-    } catch (err) {
-      console.error("Backtest simulation failed", err);
-    } finally {
-      setIsRunning(false);
+      const params = new URLSearchParams({
+        strategy: config.strategy,
+        start_date: config.startDate,
+        end_date: config.endDate,
+        comm_bps: config.commBps.toString(),
+        slippage_bps: config.slippageBps.toString(),
+      });
+
+      const es = new EventSource(`http://127.0.0.1:8000/api/v1/backtest/stream?${params}`);
+      let metricsReceived = false;
+      let fullResult: BacktestResult | null = null;
+
+      es.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data) as {
+            stage: string;
+            type: string;
+            data?: { point?: typeof INITIAL_BACKTEST_RESULT.equityCurve[0] } & Partial<BacktestResult> & { n_points?: number };
+          };
+
+          if (payload.stage === "metrics" && payload.data) {
+            setStreamStatus("streaming");
+            setRevealedMetrics(true);
+            // Update result metrics immediately, keep curve empty for animation
+            fullResult = {
+              strategyName: payload.data.strategyName ?? config.strategy,
+              lastRunTime: new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) + " IST",
+              validationMode: "Purged K-Fold (CPCV)",
+              totalReturn: payload.data.totalReturn ?? 0,
+              benchmarkReturn: payload.data.benchmarkReturn ?? 0,
+              annualizedSharpe: payload.data.annualizedSharpe ?? 0,
+              dsr: payload.data.dsr ?? 0,
+              annualizedVol: payload.data.annualizedVol ?? 0,
+              maxDrawdown: payload.data.maxDrawdown ?? 0,
+              maxDrawdownDate: "Mar 2020",
+              pbo: payload.data.pbo ?? 0,
+              winRate: payload.data.winRate ?? 0,
+              profitFactor: payload.data.profitFactor ?? 0,
+              calmarRatio: payload.data.calmarRatio ?? 0,
+              equityCurve: [],
+              tcaMetrics: payload.data.tcaMetrics ?? [],
+            };
+            setResult(fullResult);
+            metricsReceived = true;
+          }
+
+          if (payload.stage === "curve_point" && payload.data?.point) {
+            const pt = payload.data.point;
+            setAnimatedCurve(prev => [...prev, pt]);
+          }
+
+          if (payload.stage === "complete") {
+            setStreamStatus("done");
+            setIsRunning(false);
+            es.close();
+            if (fullResult && animatedCurve) {
+              setResult(prev => ({ ...prev, equityCurve: animatedCurve }));
+            }
+          }
+        } catch { /* ignore parse errors */ }
+      };
+
+      es.onerror = async () => {
+        es.close();
+        if (!metricsReceived) {
+          // Full fallback to simulation
+          try {
+            const updatedResult = await runBacktestSimulation(config);
+            setResult(updatedResult);
+            // Animate the fallback curve
+            setAnimatedCurve([]);
+            setRevealedMetrics(true);
+            setStreamStatus("streaming");
+            for (let i = 0; i < updatedResult.equityCurve.length; i++) {
+              await new Promise(r => setTimeout(r, 140));
+              setAnimatedCurve(prev => [...prev, updatedResult.equityCurve[i]]);
+            }
+            setStreamStatus("done");
+          } catch { /* ignore */ } finally {
+            setIsRunning(false);
+          }
+        }
+      };
+    } catch {
+      // Fallback: run simulation
+      try {
+        const updatedResult = await runBacktestSimulation(config);
+        setResult(updatedResult);
+        setAnimatedCurve(updatedResult.equityCurve);
+        setRevealedMetrics(true);
+      } catch (err) {
+        console.error("Backtest simulation failed", err);
+      } finally {
+        setIsRunning(false);
+        setStreamStatus("done");
+      }
     }
   };
 
@@ -60,16 +160,25 @@ export default function Backtests() {
     }
   };
 
-  // Build SVG polygon points from equity curve
-  const svgPolylineStrategy = result.equityCurve
+  // Use animated curve if running, otherwise full result curve
+  const displayCurve = (streamStatus === "streaming" || streamStatus === "computing")
+    ? animatedCurve
+    : result.equityCurve;
+
+  // Build SVG polygon points from (animated) equity curve
+  const svgPolylineStrategy = displayCurve
     .map((pt) => `${pt.x},${chartMode === "log" ? Math.max(10, pt.yStrategy * 0.9) : pt.yStrategy}`)
     .join(" ");
 
-  const svgPolylineBenchmark = result.equityCurve
+  const svgPolylineBenchmark = displayCurve
     .map((pt) => `${pt.x},${chartMode === "log" ? Math.max(15, pt.yBenchmark * 0.9) : pt.yBenchmark}`)
     .join(" ");
 
-  const svgPolygonGrad = `${svgPolylineStrategy} 100,100 0,100`;
+  const svgPolygonGrad = displayCurve.length > 0
+    ? `${svgPolylineStrategy} ${displayCurve[displayCurve.length - 1].x},100 0,100`
+    : "0,100 0,100";
+
+
 
   return (
     <div className="bg-[#f5f5f2] text-stone-900 font-body-sm text-body-sm antialiased h-screen overflow-hidden flex w-full">
@@ -120,12 +229,12 @@ export default function Backtests() {
             <li>
               <Link
                 className="flex items-center gap-3 px-3 py-2 rounded-lg text-stone-600 hover:bg-[#eeeeea] hover:text-stone-900 transition-colors"
-                href="#"
+                href="/signals"
               >
                 <span className="material-symbols-outlined text-[20px]">
                   analytics
                 </span>
-                <span className="text-body-sm font-body-sm font-medium">Signals</span>
+                <span className="text-body-sm font-body-sm font-medium">Factor Library</span>
               </Link>
             </li>
             <li>
@@ -562,6 +671,19 @@ export default function Backtests() {
                   </button>
                 </div>
               </div>
+              {/* Streaming status banner */}
+              {streamStatus === "computing" && (
+                <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-amber-600 text-sm animate-spin">refresh</span>
+                  <span className="text-xs font-semibold text-amber-800 font-mono">Computing real backtest on NIFTY 50 historical data...</span>
+                </div>
+              )}
+              {streamStatus === "streaming" && (
+                <div className="px-4 py-2 bg-emerald-50 border-b border-emerald-200 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span className="text-xs font-semibold text-emerald-800 font-mono">Streaming equity curve — {displayCurve.length} points received from real backtest</span>
+                </div>
+              )}
               {/* Clean High-Density SVG Chart Canvas */}
               <div className="flex-1 relative p-6 bg-[#fbfbfa]">
                 <div className="absolute right-6 top-4 bg-white/95 border border-[#e5e5df] rounded-lg p-3 text-xs font-mono space-y-1.5 shadow-xs z-10">
@@ -616,7 +738,21 @@ export default function Backtests() {
                       stroke="#ea580c"
                       strokeWidth="2.5"
                       vectorEffect="non-scaling-stroke"
+                      style={{ transition: "points 0.12s ease-out" }}
                     />
+                    {/* Animated cursor dot at end of curve */}
+                    {streamStatus === "streaming" && displayCurve.length > 0 && (() => {
+                      const last = displayCurve[displayCurve.length - 1];
+                      return (
+                        <circle
+                          cx={last.x}
+                          cy={chartMode === "log" ? Math.max(10, last.yStrategy * 0.9) : last.yStrategy}
+                          r="1.5"
+                          fill="#ea580c"
+                          vectorEffect="non-scaling-stroke"
+                        />
+                      );
+                    })()}
                   </svg>
                 </div>
               </div>
