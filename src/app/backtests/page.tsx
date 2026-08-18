@@ -1,6 +1,76 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { 
+  BacktestConfig, 
+  BacktestResult, 
+  StrategyType, 
+  UniverseType, 
+  ExecutionModelType 
+} from "../../types/quant";
+import { 
+  DEFAULT_BACKTEST_CONFIG, 
+  INITIAL_BACKTEST_RESULT, 
+  runBacktestSimulation, 
+  exportBacktestCSV 
+} from "../../services/quantApi";
 
 export default function Backtests() {
+  const [config, setConfig] = useState<BacktestConfig>(DEFAULT_BACKTEST_CONFIG);
+  const [result, setResult] = useState<BacktestResult>(INITIAL_BACKTEST_RESULT);
+  const [isRunning, setIsRunning] = useState(false);
+  const [chartMode, setChartMode] = useState<"linear" | "log">("linear");
+  const [newUniverseInput, setNewUniverseInput] = useState("");
+
+  const handleRunBacktest = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsRunning(true);
+    try {
+      const updatedResult = await runBacktestSimulation(config);
+      setResult(updatedResult);
+    } catch (err) {
+      console.error("Backtest simulation failed", err);
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    exportBacktestCSV(result, config);
+  };
+
+  const handleAddUniverse = () => {
+    const trimmed = newUniverseInput.trim().toUpperCase();
+    if (trimmed && !config.universe.includes(trimmed as UniverseType)) {
+      setConfig((prev) => ({
+        ...prev,
+        universe: [...prev.universe, trimmed as UniverseType],
+      }));
+      setNewUniverseInput("");
+    }
+  };
+
+  const handleRemoveUniverse = (item: UniverseType) => {
+    if (config.universe.length > 1) {
+      setConfig((prev) => ({
+        ...prev,
+        universe: prev.universe.filter((u) => u !== item),
+      }));
+    }
+  };
+
+  // Build SVG polygon points from equity curve
+  const svgPolylineStrategy = result.equityCurve
+    .map((pt) => `${pt.x},${chartMode === "log" ? Math.max(10, pt.yStrategy * 0.9) : pt.yStrategy}`)
+    .join(" ");
+
+  const svgPolylineBenchmark = result.equityCurve
+    .map((pt) => `${pt.x},${chartMode === "log" ? Math.max(15, pt.yBenchmark * 0.9) : pt.yBenchmark}`)
+    .join(" ");
+
+  const svgPolygonGrad = `${svgPolylineStrategy} 100,100 0,100`;
+
   return (
     <div className="bg-[#f5f5f2] text-stone-900 font-body-sm text-body-sm antialiased h-screen overflow-hidden flex w-full">
       {/* SideNavBar */}
@@ -214,25 +284,32 @@ export default function Backtests() {
         <div className="flex justify-between items-end mb-6">
           <div>
             <h2 className="text-headline-xl font-headline-xl text-stone-900 font-bold tracking-tight">
-              Momentum Reversion v2.4
+              {result.strategyName}
             </h2>
             <p className="text-body-sm font-body-sm text-stone-500 mt-0.5">
-              Last run: 14:32 IST | Validation Mode:{" "}
-              <span className="text-orange-600 font-semibold">Purged K-Fold (CPCV)</span>
+              Last run: {result.lastRunTime} | Validation Mode:{" "}
+              <span className="text-orange-600 font-semibold">{result.validationMode}</span>
             </p>
           </div>
           <div className="flex gap-3">
-            <button className="px-4 py-2 rounded-lg border border-[#d6d3d1] bg-white text-stone-700 hover:bg-[#eeeeea] hover:text-stone-900 transition-colors text-body-sm font-semibold flex items-center gap-1.5 shadow-2xs">
+            <button 
+              onClick={handleExportCSV}
+              className="px-4 py-2 rounded-lg border border-[#d6d3d1] bg-white text-stone-700 hover:bg-[#eeeeea] hover:text-stone-900 transition-colors text-body-sm font-semibold flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+            >
               <span className="material-symbols-outlined text-sm">
                 download
               </span>
               Export CSV
             </button>
-            <button className="px-4 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition-colors text-body-sm font-semibold flex items-center gap-1.5 shadow-2xs">
-              <span className="material-symbols-outlined text-sm">
-                play_arrow
+            <button 
+              onClick={() => handleRunBacktest()}
+              disabled={isRunning}
+              className={`px-4 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition-colors text-body-sm font-semibold flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 ${isRunning ? "opacity-75 cursor-not-allowed" : ""}`}
+            >
+              <span className={`material-symbols-outlined text-sm ${isRunning ? "animate-spin" : ""}`}>
+                {isRunning ? "refresh" : "play_arrow"}
               </span>
-              Run Backtest
+              {isRunning ? "Running CPCV..." : "Run Backtest"}
             </button>
           </div>
         </div>
@@ -253,16 +330,21 @@ export default function Backtests() {
                   Configuration
                 </h3>
               </div>
-              <form className="space-y-4">
+              <form onSubmit={handleRunBacktest} className="space-y-4">
                 {/* Strategy */}
                 <div>
                   <label className="block text-label-caps text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-1">
                     Base Strategy
                   </label>
-                  <select className="w-full bg-[#f8f8f6] text-stone-900 text-body-sm rounded-lg border border-[#e5e5df] py-1.5 px-2.5 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 font-medium">
-                    <option>Momentum Reversion (MR)</option>
-                    <option>Statistical Arbitrage (SA)</option>
-                    <option>Volatility Targeting (VT)</option>
+                  <select 
+                    value={config.strategy}
+                    onChange={(e) => setConfig({ ...config, strategy: e.target.value as StrategyType })}
+                    className="w-full bg-[#f8f8f6] text-stone-900 text-body-sm rounded-lg border border-[#e5e5df] py-1.5 px-2.5 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 font-medium"
+                  >
+                    <option value="Momentum Reversion (MR)">Momentum Reversion (MR)</option>
+                    <option value="Statistical Arbitrage (SA)">Statistical Arbitrage (SA)</option>
+                    <option value="Volatility Targeting (VT)">Volatility Targeting (VT)</option>
+                    <option value="FinBERT Sentiment Alpha (SA)">FinBERT Sentiment Alpha (SA)</option>
                   </select>
                 </div>
                 {/* Universe */}
@@ -272,12 +354,21 @@ export default function Backtests() {
                   </label>
                   <div className="flex gap-2">
                     <input
-                      className="flex-1 bg-[#f8f8f6] text-stone-900 text-body-sm rounded-lg border border-[#e5e5df] py-1.5 px-2.5 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 font-medium"
+                      className="flex-1 bg-[#f8f8f6] text-stone-900 text-body-sm rounded-lg border border-[#e5e5df] py-1.5 px-2.5 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 font-medium uppercase"
                       type="text"
-                      defaultValue="NIFTY 50"
+                      placeholder="e.g. NIFTY IT"
+                      value={newUniverseInput}
+                      onChange={(e) => setNewUniverseInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddUniverse();
+                        }
+                      }}
                     />
                     <button
-                      className="px-2.5 py-1.5 bg-[#eeeeea] border border-[#e5e5df] rounded-lg hover:bg-[#e4e4dd] transition-colors text-stone-700"
+                      onClick={handleAddUniverse}
+                      className="px-2.5 py-1.5 bg-[#eeeeea] border border-[#e5e5df] rounded-lg hover:bg-[#e4e4dd] transition-colors text-stone-700 cursor-pointer"
                       type="button"
                     >
                       <span className="material-symbols-outlined text-sm">
@@ -286,22 +377,23 @@ export default function Backtests() {
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-1 mt-2">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#eeeeea] text-xs text-stone-800 border border-[#e5e5df] font-medium">
-                      NIFTY 50{" "}
-                      <button className="text-stone-400 hover:text-rose-600">
-                        <span className="material-symbols-outlined text-[10px]">
-                          close
-                        </span>
-                      </button>
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#eeeeea] text-xs text-stone-800 border border-[#e5e5df] font-medium">
-                      NIFTY BANK{" "}
-                      <button className="text-stone-400 hover:text-rose-600">
-                        <span className="material-symbols-outlined text-[10px]">
-                          close
-                        </span>
-                      </button>
-                    </span>
+                    {config.universe.map((item) => (
+                      <span 
+                        key={item} 
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#eeeeea] text-xs text-stone-800 border border-[#e5e5df] font-medium"
+                      >
+                        {item}{" "}
+                        <button 
+                          type="button"
+                          onClick={() => handleRemoveUniverse(item)}
+                          className="text-stone-400 hover:text-rose-600 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[10px]">
+                            close
+                          </span>
+                        </button>
+                      </span>
+                    ))}
                   </div>
                 </div>
                 <div className="w-full h-px bg-[#e5e5df]"></div>
@@ -314,7 +406,8 @@ export default function Backtests() {
                     <input
                       className="w-full bg-[#f8f8f6] text-stone-900 text-body-sm rounded-lg border border-[#e5e5df] py-1 px-2 text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500 font-mono"
                       type="date"
-                      defaultValue="2015-01-01"
+                      value={config.startDate}
+                      onChange={(e) => setConfig({ ...config, startDate: e.target.value })}
                     />
                   </div>
                   <div>
@@ -324,7 +417,8 @@ export default function Backtests() {
                     <input
                       className="w-full bg-[#f8f8f6] text-stone-900 text-body-sm rounded-lg border border-[#e5e5df] py-1 px-2 text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500 font-mono"
                       type="date"
-                      defaultValue="2024-12-31"
+                      value={config.endDate}
+                      onChange={(e) => setConfig({ ...config, endDate: e.target.value })}
                     />
                   </div>
                 </div>
@@ -333,11 +427,15 @@ export default function Backtests() {
                   <label className="block text-label-caps text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-1">
                     Execution Model
                   </label>
-                  <select className="w-full bg-[#f8f8f6] text-stone-900 text-body-sm rounded-lg border border-[#e5e5df] py-1.5 px-2.5 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 font-medium">
-                    <option>TWAP (Volume Weighted)</option>
-                    <option>VWAP</option>
-                    <option>Implementation Shortfall</option>
-                    <option>Instant (No Slippage)</option>
+                  <select 
+                    value={config.executionModel}
+                    onChange={(e) => setConfig({ ...config, executionModel: e.target.value as ExecutionModelType })}
+                    className="w-full bg-[#f8f8f6] text-stone-900 text-body-sm rounded-lg border border-[#e5e5df] py-1.5 px-2.5 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 font-medium"
+                  >
+                    <option value="TWAP (Volume Weighted)">TWAP (Volume Weighted)</option>
+                    <option value="VWAP">VWAP</option>
+                    <option value="Implementation Shortfall">Implementation Shortfall</option>
+                    <option value="Instant (No Slippage)">Instant (No Slippage)</option>
                   </select>
                 </div>
                 {/* Slippage / Fees */}
@@ -350,7 +448,8 @@ export default function Backtests() {
                       className="w-full bg-[#f8f8f6] text-stone-900 font-mono text-right rounded-lg border border-[#e5e5df] py-1 px-2 text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
                       step="0.1"
                       type="number"
-                      defaultValue="1.5"
+                      value={config.commBps}
+                      onChange={(e) => setConfig({ ...config, commBps: parseFloat(e.target.value) || 0 })}
                     />
                   </div>
                   <div>
@@ -361,7 +460,8 @@ export default function Backtests() {
                       className="w-full bg-[#f8f8f6] text-stone-900 font-mono text-right rounded-lg border border-[#e5e5df] py-1 px-2 text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
                       step="0.5"
                       type="number"
-                      defaultValue="5.0"
+                      value={config.slippageBps}
+                      onChange={(e) => setConfig({ ...config, slippageBps: parseFloat(e.target.value) || 0 })}
                     />
                   </div>
                 </div>
@@ -395,9 +495,9 @@ export default function Backtests() {
                 </p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-headline-xl font-headline-xl text-orange-600 font-bold">
-                    +142.8%
+                    +{result.totalReturn}%
                   </span>
-                  <span className="text-xs text-stone-400 font-medium">vs 98.4% BM</span>
+                  <span className="text-xs text-stone-400 font-medium">vs +{result.benchmarkReturn}% BM</span>
                 </div>
               </div>
               {/* Metric Card 2 */}
@@ -407,9 +507,9 @@ export default function Backtests() {
                 </p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-headline-xl font-headline-xl text-emerald-600 font-bold">
-                    1.84
+                    {result.annualizedSharpe}
                   </span>
-                  <span className="text-xs text-stone-400 font-medium">DSR: 0.96</span>
+                  <span className="text-xs text-stone-400 font-medium">DSR: {result.dsr}</span>
                 </div>
               </div>
               {/* Metric Card 3 */}
@@ -419,8 +519,9 @@ export default function Backtests() {
                 </p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-headline-xl font-headline-xl text-stone-900 font-bold">
-                    12.5%
+                    {result.annualizedVol}%
                   </span>
+                  <span className="text-xs text-stone-400 font-medium">Calmar: {result.calmarRatio}</span>
                 </div>
               </div>
               {/* Metric Card 4 */}
@@ -430,9 +531,9 @@ export default function Backtests() {
                 </p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-headline-xl font-headline-xl text-rose-800 font-bold">
-                    -14.2%
+                    {result.maxDrawdown}%
                   </span>
-                  <span className="text-xs text-stone-400 font-medium">Mar 2020</span>
+                  <span className="text-xs text-stone-400 font-medium">{result.maxDrawdownDate}</span>
                 </div>
               </div>
             </div>
@@ -447,10 +548,16 @@ export default function Backtests() {
                   Cumulative Equity Curve vs NIFTY 50
                 </h3>
                 <div className="flex gap-2">
-                  <button className="px-2.5 py-1 text-xs bg-[#eeeeea] border border-[#e5e5df] rounded-md text-stone-600 font-medium hover:bg-[#e4e4dd]">
+                  <button 
+                    onClick={() => setChartMode("log")}
+                    className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors cursor-pointer ${chartMode === "log" ? "bg-orange-600 text-white font-semibold" : "bg-[#eeeeea] border border-[#e5e5df] text-stone-600 hover:bg-[#e4e4dd]"}`}
+                  >
                     Log
                   </button>
-                  <button className="px-2.5 py-1 text-xs bg-orange-600 text-white rounded-md font-semibold shadow-2xs">
+                  <button 
+                    onClick={() => setChartMode("linear")}
+                    className={`px-2.5 py-1 text-xs rounded-md font-semibold transition-colors shadow-2xs cursor-pointer ${chartMode === "linear" ? "bg-orange-600 text-white font-semibold" : "bg-[#eeeeea] border border-[#e5e5df] text-stone-600 hover:bg-[#e4e4dd]"}`}
+                  >
                     Linear
                   </button>
                 </div>
@@ -460,11 +567,11 @@ export default function Backtests() {
                 <div className="absolute right-6 top-4 bg-white/95 border border-[#e5e5df] rounded-lg p-3 text-xs font-mono space-y-1.5 shadow-xs z-10">
                   <div className="flex justify-between gap-4">
                     <span className="text-stone-500 font-medium">Strategy</span>
-                    <span className="text-orange-600 font-bold">+142.8%</span>
+                    <span className="text-orange-600 font-bold">+{result.totalReturn}%</span>
                   </div>
                   <div className="flex justify-between gap-4">
                     <span className="text-stone-500 font-medium">Benchmark</span>
-                    <span className="text-stone-700 font-semibold">+98.4%</span>
+                    <span className="text-stone-700 font-semibold">+{result.benchmarkReturn}%</span>
                   </div>
                 </div>
                 <div className="w-full h-full border-b border-l border-[#d6d3d1] relative">
@@ -492,12 +599,12 @@ export default function Backtests() {
                       </linearGradient>
                     </defs>
                     <polygon
-                      points="0,85 12,78 25,68 37,58 50,62 62,45 75,32 87,22 100,8 100,100 0,100"
+                      points={svgPolygonGrad}
                       fill="url(#backtestGrad)"
                     />
                     <polyline
                       fill="none"
-                      points="0,85 12,82 25,76 37,70 50,75 62,60 75,52 87,46 100,40"
+                      points={svgPolylineBenchmark}
                       stroke="#a8a29e"
                       strokeWidth="1.5"
                       strokeDasharray="3,3"
@@ -505,7 +612,7 @@ export default function Backtests() {
                     />
                     <polyline
                       fill="none"
-                      points="0,85 12,78 25,68 37,58 50,62 62,45 75,32 87,22 100,8"
+                      points={svgPolylineStrategy}
                       stroke="#ea580c"
                       strokeWidth="2.5"
                       vectorEffect="non-scaling-stroke"
@@ -517,13 +624,16 @@ export default function Backtests() {
 
             {/* Transaction Cost Analysis (Bottom Row) */}
             <div className="bg-white border border-[#e5e5df] rounded-lg h-48 flex flex-col shadow-xs overflow-hidden">
-              <div className="px-4 py-2 border-b border-[#e5e5df] bg-[#f8f8f6]/70">
+              <div className="px-4 py-2 border-b border-[#e5e5df] bg-[#f8f8f6]/70 flex justify-between items-center">
                 <h3 className="text-body-sm font-semibold text-stone-900 flex items-center gap-2">
                   <span className="material-symbols-outlined text-base text-stone-500">
                     receipt_long
                   </span>
                   Transaction Cost Analysis (TCA)
                 </h3>
+                <span className="text-xs text-stone-500 font-mono">
+                  Slippage: {config.slippageBps} bps | Comm: {config.commBps} bps
+                </span>
               </div>
               <div className="flex-1 overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -540,62 +650,26 @@ export default function Backtests() {
                     </tr>
                   </thead>
                   <tbody className="text-data-metric-sm font-data-metric-sm font-mono text-stone-800 divide-y divide-[#f0f0ec]">
-                    <tr className="hover:bg-[#f5f5f2] transition-colors">
-                      <td className="px-4 py-2 flex items-center gap-2 font-sans font-medium text-stone-900">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>{" "}
-                        Market Impact
-                      </td>
-                      <td className="px-4 py-2 text-right">4.2</td>
-                      <td className="px-4 py-2 text-right text-rose-800 font-semibold">
-                        -₹14,250
-                      </td>
-                      <td className="px-4 py-2 w-1/3">
-                        <div className="w-full bg-[#eeeeea] h-1.5 rounded-full overflow-hidden flex">
-                          <div
-                            className="bg-blue-500 h-full"
-                            style={{ width: "45%" }}
-                          ></div>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-[#f5f5f2] transition-colors">
-                      <td className="px-4 py-2 flex items-center gap-2 font-sans font-medium text-stone-900">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>{" "}
-                        Slippage vs Arrival
-                      </td>
-                      <td className="px-4 py-2 text-right">1.8</td>
-                      <td className="px-4 py-2 text-right text-rose-800 font-semibold">
-                        -₹6,120
-                      </td>
-                      <td className="px-4 py-2 w-1/3">
-                        <div className="w-full bg-[#eeeeea] h-1.5 rounded-full overflow-hidden flex">
-                          <div
-                            className="bg-purple-500 h-full"
-                            style={{ width: "20%" }}
-                          ></div>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-[#f5f5f2] transition-colors">
-                      <td className="px-4 py-2 flex items-center gap-2 font-sans font-medium text-stone-900">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>{" "}
-                        Alpha Capture
-                      </td>
-                      <td className="px-4 py-2 text-right text-emerald-800 font-semibold">
-                        +2.1
-                      </td>
-                      <td className="px-4 py-2 text-right text-emerald-800 font-semibold">
-                        +₹7,400
-                      </td>
-                      <td className="px-4 py-2 w-1/3">
-                        <div className="w-full bg-[#eeeeea] h-1.5 rounded-full overflow-hidden flex">
-                          <div
-                            className="bg-emerald-500 h-full"
-                            style={{ width: "25%" }}
-                          ></div>
-                        </div>
-                      </td>
-                    </tr>
+                    {result.tcaMetrics.map((tca) => (
+                      <tr key={tca.name} className="hover:bg-[#f5f5f2] transition-colors">
+                        <td className="px-4 py-2 flex items-center gap-2 font-sans font-medium text-stone-900">
+                          <div className={`w-2 h-2 ${tca.color} rounded-full`}></div>{" "}
+                          {tca.name}
+                        </td>
+                        <td className="px-4 py-2 text-right">{tca.valueBps}</td>
+                        <td className={`px-4 py-2 text-right font-semibold ${tca.impactPnL >= 0 ? "text-emerald-800" : "text-rose-800"}`}>
+                          {tca.impactPnL >= 0 ? `+₹${tca.impactPnL.toLocaleString("en-IN")}` : `-₹${Math.abs(tca.impactPnL).toLocaleString("en-IN")}`}
+                        </td>
+                        <td className="px-4 py-2 w-1/3">
+                          <div className="w-full bg-[#eeeeea] h-1.5 rounded-full overflow-hidden flex">
+                            <div
+                              className={`${tca.color} h-full`}
+                              style={{ width: `${tca.distributionPct}%` }}
+                            ></div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -606,3 +680,4 @@ export default function Backtests() {
     </div>
   );
 }
+
