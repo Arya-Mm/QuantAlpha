@@ -34,7 +34,7 @@ export default function CommandCenter() {
           </Link>
           <Link
             className="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3 scale-98 active:scale-95 transition-transform"
-            href="#"
+            href="/research"
           >
             <span className="material-symbols-outlined text-[20px]">
               science
@@ -70,7 +70,7 @@ export default function CommandCenter() {
           </Link>
           <Link
             className="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3 scale-98 active:scale-95 transition-transform"
-            href="#"
+            href="/backtests"
           >
             <span className="material-symbols-outlined text-[20px]">
               history

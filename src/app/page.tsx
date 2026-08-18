@@ -36,7 +36,7 @@ export default function OverviewDashboard() {
           </Link>
           <Link
             className="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3"
-            href="#"
+            href="/research"
           >
             <span className="material-symbols-outlined">science</span>
             <span className="font-body-sm text-body-sm">Research</span>
@@ -64,7 +64,7 @@ export default function OverviewDashboard() {
           </Link>
           <Link
             className="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3"
-            href="#"
+            href="/backtests"
           >
             <span className="material-symbols-outlined">history</span>
             <span className="font-body-sm text-body-sm">Backtests</span>
