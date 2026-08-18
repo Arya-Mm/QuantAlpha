@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ActivityLogEvent, RiskGateConstraint, AgentRole } from "../../types/quant";
 import { INITIAL_ACTIVITY_LOG, INITIAL_RISK_CONSTRAINTS } from "../../services/quantApi";
+import { useLiveMarket } from "../../hooks/useLiveMarket";
 
 export default function CommandCenter() {
   const [mode, setMode] = useState<"Manual" | "Assisted" | "Auto Paper">("Auto Paper");
@@ -13,21 +14,23 @@ export default function CommandCenter() {
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [activityLogs, setActivityLogs] = useState<ActivityLogEvent[]>(INITIAL_ACTIVITY_LOG);
   const [riskConstraints] = useState<RiskGateConstraint[]>(INITIAL_RISK_CONSTRAINTS);
-  const [epochCount, setEpochCount] = useState(42);
+  
+  // Real-time live market hook
+  const liveMarket = useLiveMarket();
 
   // Simulated live event ticker for Auto Paper mode
   useEffect(() => {
     if (mode !== "Auto Paper" || isHalted) return;
 
     const interval = setInterval(() => {
-      setEpochCount((prev) => prev + 1);
+      const relQuote = liveMarket.quotes["RELIANCE"] || { price: 3012.40 };
       const sampleEvents: ActivityLogEvent[] = [
         {
           id: `evt-${Date.now()}-1`,
           timestamp: new Date().toLocaleTimeString("en-IN", { hour12: false }),
           agent: "Execution",
           action: "TWAP Slice #4 filled (NSE Paper)",
-          evidence: "12 RELIANCE @ ₹2,845.20 (Arrival Slip: +0.02 bps)",
+          evidence: `12 RELIANCE @ ₹${relQuote.price.toLocaleString("en-IN")} (Arrival Slip: +0.02 bps)`,
           status: "success",
         },
         {
@@ -43,21 +46,32 @@ export default function CommandCenter() {
           timestamp: new Date().toLocaleTimeString("en-IN", { hour12: false }),
           agent: "Strategy",
           action: "Scanned Momentum Breakout on NIFTY IT",
-          evidence: "INFY z-score: +2.34σ | FinBERT Score: +0.82",
+          evidence: `TCS Price: ₹${(liveMarket.quotes["TCS"]?.price || 3985).toLocaleString("en-IN")} | FinBERT: +0.82`,
           status: "info",
         },
       ];
 
       const newEvent = sampleEvents[Math.floor(Math.random() * sampleEvents.length)];
       setActivityLogs((prev) => [newEvent, ...prev.slice(0, 19)]);
-    }, 15000);
+    }, 8000);
 
     return () => clearInterval(interval);
-  }, [mode, isHalted]);
+  }, [mode, isHalted, liveMarket.quotes]);
 
-  const handleTriggerKillSwitch = () => {
+  const handleTriggerKillSwitch = async () => {
     setIsHalted(true);
     setShowKillModal(false);
+
+    try {
+      await fetch("http://127.0.0.1:8000/api/v1/bot/kill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Manual Kill Switch Engaged by User" }),
+      });
+    } catch {
+      // Local fallback
+    }
+
     const haltEvent: ActivityLogEvent = {
       id: `evt-kill-${Date.now()}`,
       timestamp: new Date().toLocaleTimeString("en-IN", { hour12: false }),
@@ -169,33 +183,6 @@ export default function CommandCenter() {
           </Link>
           <Link
             className="text-stone-600 hover:text-stone-900 hover:bg-[#eeeeea] transition-colors rounded-lg px-3 py-2 flex items-center gap-3"
-            href="#"
-          >
-            <span className="material-symbols-outlined text-[20px]">
-              database
-            </span>
-            <span className="font-body-sm text-body-sm font-medium">Data</span>
-          </Link>
-          <Link
-            className="text-stone-600 hover:text-stone-900 hover:bg-[#eeeeea] transition-colors rounded-lg px-3 py-2 flex items-center gap-3"
-            href="#"
-          >
-            <span className="material-symbols-outlined text-[20px]">
-              analytics
-            </span>
-            <span className="font-body-sm text-body-sm font-medium">Signals</span>
-          </Link>
-          <Link
-            className="text-stone-600 hover:text-stone-900 hover:bg-[#eeeeea] transition-colors rounded-lg px-3 py-2 flex items-center gap-3"
-            href="#"
-          >
-            <span className="material-symbols-outlined text-[20px]">
-              rule
-            </span>
-            <span className="font-body-sm text-body-sm font-medium">Validation</span>
-          </Link>
-          <Link
-            className="text-stone-600 hover:text-stone-900 hover:bg-[#eeeeea] transition-colors rounded-lg px-3 py-2 flex items-center gap-3"
             href="/backtests"
           >
             <span className="material-symbols-outlined text-[20px]">
@@ -204,82 +191,32 @@ export default function CommandCenter() {
             <span className="font-body-sm text-body-sm font-medium">Backtests</span>
           </Link>
           <Link
-            className="text-stone-600 hover:text-stone-900 hover:bg-[#eeeeea] transition-colors rounded-lg px-3 py-2 flex items-center gap-3"
-            href="#"
-          >
-            <span className="material-symbols-outlined text-[20px]">
-              account_balance
-            </span>
-            <span className="font-body-sm text-body-sm font-medium">Portfolio</span>
-          </Link>
-          <Link
-            className="text-stone-600 hover:text-stone-900 hover:bg-[#eeeeea] transition-colors rounded-lg px-3 py-2 flex items-center gap-3"
-            href="#"
-          >
-            <span className="material-symbols-outlined text-[20px]">
-              description
-            </span>
-            <span className="font-body-sm text-body-sm font-medium">Reports</span>
-          </Link>
-
-          <Link
-            className="bg-orange-50 text-orange-600 font-semibold rounded-lg px-3 py-2 flex items-center gap-3 border border-orange-200/70 transition-all"
+            className="bg-orange-50 text-orange-600 font-semibold rounded-lg px-3 py-2 flex items-center gap-3 border border-orange-200/70"
             href="/command-center"
           >
             <span className="material-symbols-outlined text-[20px]">
-              monitoring
+              terminal
             </span>
-            <span className="font-body-sm text-body-sm font-semibold">Live Monitor</span>
-          </Link>
-
-          <div className="px-4 pb-2 pt-5 font-label-caps text-[11px] font-bold text-stone-400 uppercase tracking-wider">
-            System
-          </div>
-          <Link
-            className="text-stone-600 hover:text-stone-900 hover:bg-[#eeeeea] transition-colors rounded-lg px-3 py-2 flex items-center gap-3"
-            href="#"
-          >
-            <span className="material-symbols-outlined text-[20px]">
-              storage
-            </span>
-            <span className="font-body-sm text-body-sm font-medium">Data Sources</span>
-          </Link>
-          <Link
-            className="text-stone-600 hover:text-stone-900 hover:bg-[#eeeeea] transition-colors rounded-lg px-3 py-2 flex items-center gap-3"
-            href="#"
-          >
-            <span className="material-symbols-outlined text-[20px]">
-              precision_manufacturing
-            </span>
-            <span className="font-body-sm text-body-sm font-medium">Pipeline Runs</span>
-          </Link>
-          <Link
-            className="text-stone-600 hover:text-stone-900 hover:bg-[#eeeeea] transition-colors rounded-lg px-3 py-2 flex items-center gap-3"
-            href="#"
-          >
-            <span className="material-symbols-outlined text-[20px]">
-              settings
-            </span>
-            <span className="font-body-sm text-body-sm font-medium">Settings</span>
+            <span className="font-body-sm text-body-sm font-bold">Live Monitor</span>
           </Link>
         </div>
 
         <div className="px-4 py-4 border-t border-[#e5e5df] bg-[#f8f8f6] flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <div className={`w-2 h-2 rounded-full ${isHalted ? "bg-rose-500" : "bg-emerald-500"}`}></div>
+              <div className={`w-2 h-2 rounded-full ${isHalted ? "bg-rose-500 animate-ping" : "bg-emerald-500 animate-pulse"}`}></div>
               <span className="font-body-sm text-xs font-semibold text-stone-800">
-                System Status
+                {liveMarket.isLiveFeed ? "FastAPI Live Feed" : "System Status"}
               </span>
             </div>
-            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${isHalted ? "text-rose-800 bg-rose-50 border-rose-200" : "text-emerald-800 bg-emerald-50 border-emerald-200"}`}>
-              {isHalted ? "HALTED" : "Autonomy Active"}
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${isHalted ? "text-rose-800 bg-rose-50 border-rose-200" : "text-emerald-800 bg-emerald-50 border-emerald-200"}`}>
+              {isHalted ? "HALTED" : (liveMarket.isLiveFeed ? "LIVE STREAM" : "ONLINE")}
             </span>
           </div>
           <div className="flex items-center justify-between text-xs text-stone-500 font-medium">
-            <span>Last Heartbeat</span>
-            <span className="font-mono text-stone-700">
-              1s ago
+            <span>Last Tick</span>
+            <span className="font-mono text-stone-700 text-[11px]">
+              {liveMarket.lastUpdate}
             </span>
           </div>
         </div>
@@ -287,66 +224,37 @@ export default function CommandCenter() {
 
       {/* Main Content Area */}
       <main className="ml-60 flex-1 flex flex-col h-full bg-[#f5f5f2]">
-        {/* TopAppBar */}
+        {/* Top Header */}
         <header className="h-16 w-full sticky top-0 z-10 border-b border-[#e5e5df] bg-white/95 backdrop-blur-md flex items-center justify-between px-6 shadow-xs">
           <div className="flex items-center gap-4">
             <div className="flex flex-col">
               <span className="font-headline-md text-headline-md font-bold text-stone-900">
-                Research Dashboard
-              </span>
-              <span className="font-label-caps text-[10px] text-stone-500 uppercase tracking-wider font-semibold">
                 Autonomous Command Center
               </span>
+              <span className="font-label-caps text-[10px] text-stone-500 uppercase tracking-wider font-semibold">
+                Real-Time NSE Equities &amp; Portfolio Daemon
+              </span>
             </div>
           </div>
 
-          <div className="hidden lg:flex items-center gap-6">
-            <div className="flex flex-col">
-              <span className="font-label-caps text-[10px] text-stone-500 uppercase tracking-wider font-semibold">
-                Environment
-              </span>
-              <button className="flex items-center gap-1 font-body-sm text-body-sm text-stone-800 font-medium hover:text-orange-600 transition-colors">
-                Research{" "}
-                <span className="material-symbols-outlined text-[16px] text-stone-400">
-                  expand_more
+          {/* Live Market Quick Ticker Header */}
+          <div className="hidden xl:flex items-center gap-4 bg-[#f8f8f6] px-3 py-1.5 rounded-lg border border-[#e5e5df]">
+            {Object.values(liveMarket.quotes).slice(0, 4).map((q) => (
+              <div key={q.symbol} className="flex items-center gap-2 text-xs">
+                <span className="font-semibold text-stone-700">{q.symbol}</span>
+                <span className="font-mono font-bold text-stone-900">₹{q.price.toLocaleString("en-IN")}</span>
+                <span className={`font-mono text-[10px] font-bold px-1 py-0.2 rounded ${q.change >= 0 ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50"}`}>
+                  {q.change >= 0 ? "+" : ""}{q.changePct}%
                 </span>
-              </button>
-            </div>
-            <div className="h-8 w-px bg-[#e5e5df]"></div>
-            <div className="flex flex-col">
-              <span className="font-label-caps text-[10px] text-stone-500 uppercase tracking-wider font-semibold">
-                Dataset
-              </span>
-              <button className="flex items-center gap-1 font-body-sm text-body-sm text-stone-800 font-medium hover:text-orange-600 transition-colors">
-                NSE Equities{" "}
-                <span className="material-symbols-outlined text-[16px] text-stone-400">
-                  expand_more
-                </span>
-              </button>
-            </div>
-            <div className="h-8 w-px bg-[#e5e5df]"></div>
-            <div className="flex flex-col">
-              <span className="font-label-caps text-[10px] text-stone-500 uppercase tracking-wider font-semibold">
-                Date Range
-              </span>
-              <button className="flex items-center gap-2 font-data-metric-sm text-data-metric-sm font-mono text-stone-800 font-medium hover:text-orange-600 transition-colors">
-                2015-01-01{" "}
-                <span className="material-symbols-outlined text-[14px] text-stone-400">
-                  arrow_forward
-                </span>{" "}
-                2026-08-18{" "}
-                <span className="material-symbols-outlined text-[16px] text-orange-600">
-                  calendar_today
-                </span>
-              </button>
-            </div>
+              </div>
+            ))}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {isHalted ? (
               <button
                 onClick={handleResumeSystem}
-                className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold text-xs flex items-center gap-1.5 shadow-2xs hover:bg-emerald-700 transition-colors cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold text-xs flex items-center gap-1.5 shadow-2xs hover:bg-emerald-700 transition-colors cursor-pointer"
               >
                 <span className="material-symbols-outlined text-sm">play_arrow</span>
                 Resume Autonomy
@@ -354,38 +262,13 @@ export default function CommandCenter() {
             ) : (
               <button
                 onClick={() => setShowKillModal(true)}
-                className="px-3 py-1.5 rounded-lg border border-rose-300 bg-rose-50 text-rose-800 font-semibold text-xs flex items-center gap-1.5 shadow-2xs hover:bg-rose-100 transition-colors cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg border border-rose-300 bg-rose-50 text-rose-800 font-semibold text-xs flex items-center gap-1.5 shadow-2xs hover:bg-rose-100 transition-colors cursor-pointer"
               >
                 <span className="material-symbols-outlined text-sm">power_settings_new</span>
                 Kill Switch
               </button>
             )}
 
-            <div className="flex items-center gap-6 mr-2 border-r border-[#e5e5df] pr-6">
-              <div className="flex flex-col items-end">
-                <span className="font-label-caps text-[10px] text-stone-500 uppercase tracking-wider font-semibold">
-                  System Status
-                </span>
-                <div className={`flex items-center gap-1.5 font-semibold text-xs ${isHalted ? "text-rose-700" : "text-emerald-800"}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${isHalted ? "bg-rose-500 animate-pulse" : "bg-emerald-500"}`}></span>
-                  <span>{isHalted ? "Halted" : "Healthy"}</span>
-                </div>
-              </div>
-              <div className="flex flex-col items-end">
-                <span className="font-label-caps text-[10px] text-stone-500 uppercase tracking-wider font-semibold">
-                  Last Tick
-                </span>
-                <div className="flex items-center gap-1 font-mono text-xs text-stone-700 font-medium">
-                  <span>Just now</span>
-                  <span className="material-symbols-outlined text-[14px] text-emerald-600">
-                    check_circle
-                  </span>
-                </div>
-              </div>
-            </div>
-            <button className="text-stone-400 hover:text-stone-700 transition-colors flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[#eeeeea]">
-              <span className="material-symbols-outlined text-[20px]">notifications</span>
-            </button>
             <div className="w-8 h-8 rounded-full bg-orange-100 border border-orange-300 flex items-center justify-center font-bold text-xs text-orange-700 shadow-2xs">
               QA
             </div>
@@ -395,13 +278,15 @@ export default function CommandCenter() {
         {/* Scrollable Content Canvas */}
         <div className="flex-1 overflow-y-auto p-6 bg-[#f5f5f2]">
           <div className="max-w-[1600px] mx-auto flex flex-col gap-5">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-1">
+            
+            {/* Top Bar: Title & Mode Switcher */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
                 <h2 className="font-headline-xl text-headline-xl text-stone-900 font-bold tracking-tight">
-                  Autonomous Command Center
+                  Live Portfolio &amp; Risk Guard
                 </h2>
-                <p className="font-body-lg text-body-lg text-stone-600">
-                  Autonomous research, statistical validation, and execution monitoring.
+                <p className="font-body-lg text-body-lg text-stone-600 text-xs">
+                  Real-time mark-to-market valuations, risk compliance, and autonomous order audit stream.
                 </p>
               </div>
 
@@ -423,159 +308,142 @@ export default function CommandCenter() {
                   onClick={() => setMode("Auto Paper")}
                   className={`px-3.5 py-1.5 font-body-sm text-xs rounded-md flex items-center gap-1.5 transition-colors cursor-pointer ${mode === "Auto Paper" ? "bg-orange-600 text-white font-semibold shadow-2xs" : "text-stone-600 hover:text-stone-900 font-semibold"}`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">
-                    smart_toy
-                  </span>
+                  <span className="material-symbols-outlined text-[16px]">smart_toy</span>
                   Auto Paper
                 </button>
-                <button 
-                  disabled
-                  title="Live Broker API requires production keys"
-                  className="px-3.5 py-1.5 font-body-sm text-xs text-stone-400 opacity-60 cursor-not-allowed flex items-center gap-1 rounded-md"
-                >
-                  Live{" "}
-                  <span className="material-symbols-outlined text-[14px]">
-                    lock
-                  </span>
-                </button>
               </div>
             </div>
 
-            {/* Workflow Stepper Panel */}
-            <div className="bg-white border border-[#e5e5df] rounded-lg p-5 shadow-xs">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-headline-md text-headline-md text-stone-900 font-semibold flex items-center gap-2">
-                  <span className="material-symbols-outlined text-orange-600">
-                    account_tree
-                  </span>
-                  Agent Workflow Status
-                </h3>
-                <span className={`px-3 py-1 rounded-full font-label-caps text-xs font-semibold uppercase flex items-center gap-1.5 border ${isHalted ? "bg-rose-50 text-rose-800 border-rose-200" : "bg-orange-50 text-orange-700 border-orange-200"}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${isHalted ? "bg-rose-500" : "bg-orange-500 animate-pulse"}`}></span>{" "}
-                  {isHalted ? "System Halted" : `Processing Epoch ${epochCount}`}
-                </span>
+            {/* Real Live Mark-to-Market Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white border border-[#e5e5df] rounded-xl p-4 shadow-xs">
+                <div className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Portfolio NAV</div>
+                <div className="text-xl font-bold font-mono text-stone-900 mt-1">
+                  ₹{liveMarket.nav.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                </div>
+                <div className="text-[11px] text-stone-500 mt-0.5">Live Mark-to-Market</div>
               </div>
-              <div className="flex items-center justify-between w-full overflow-x-auto pb-1">
-                {/* Node 1 */}
-                <div className="flex flex-col w-48 shrink-0 bg-[#f8f8f6] border border-[#e5e5df] rounded-lg p-3 relative shadow-2xs">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-label-caps text-[10px] font-bold text-stone-500 uppercase tracking-wider">
-                      Market Data
-                    </span>
-                    <span className="material-symbols-outlined text-[16px] text-emerald-600">
-                      check_circle
-                    </span>
-                  </div>
-                  <span className="font-body-sm text-body-sm text-stone-900 font-semibold">
-                    Ingestion Complete
-                  </span>
-                  <span className="font-data-metric-sm text-stone-500 mt-0.5 text-xs font-mono">
-                    Parsed 14.2M ticks
-                  </span>
-                </div>
-                <div className="flex-1 h-px bg-[#e5e5df] mx-2 relative min-w-[20px]">
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 border-t border-r border-stone-400 rotate-45"></div>
-                </div>
 
-                {/* Node 2 */}
-                <div className="flex flex-col w-48 shrink-0 bg-white border border-orange-300 rounded-lg p-3 relative shadow-xs">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-label-caps text-[10px] font-bold text-orange-600 uppercase tracking-wider">
-                      Strategy Agent
-                    </span>
-                    <span className={`material-symbols-outlined text-[16px] text-orange-600 ${isHalted ? "" : "animate-spin"}`}>
-                      refresh
-                    </span>
-                  </div>
-                  <span className="font-body-sm text-body-sm text-orange-700 font-semibold">
-                    {isHalted ? "Standby" : "Scanning Signals"}
-                  </span>
-                  <span className="font-data-metric-sm text-stone-500 mt-0.5 text-xs font-mono">
-                    Momentum in RELIANCE
-                  </span>
+              <div className="bg-white border border-[#e5e5df] rounded-xl p-4 shadow-xs">
+                <div className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Today's PnL</div>
+                <div className={`text-xl font-bold font-mono mt-1 ${liveMarket.dailyPnL >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                  {liveMarket.dailyPnL >= 0 ? "+" : ""}₹{liveMarket.dailyPnL.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                  <span className="text-xs ml-1 font-semibold">({liveMarket.dailyPnLPct}%)</span>
                 </div>
-                <div className="flex-1 h-px bg-[#e5e5df] mx-2 relative min-w-[20px]">
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 border-t border-r border-stone-400 rotate-45"></div>
-                </div>
+                <div className="text-[11px] text-emerald-800 font-medium mt-0.5">Real-time valuation</div>
+              </div>
 
-                {/* Node 3 */}
-                <div className="flex flex-col w-48 shrink-0 bg-[#f8f8f6] border border-[#e5e5df] rounded-lg p-3 relative opacity-80 shadow-2xs">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-label-caps text-[10px] font-bold text-stone-500 uppercase tracking-wider">
-                      Risk Gate
-                    </span>
-                    <span className="material-symbols-outlined text-[16px] text-stone-400">
-                      hourglass_empty
-                    </span>
-                  </div>
-                  <span className="font-body-sm text-body-sm text-stone-700 font-medium">
-                    Pending Review
-                  </span>
-                  <span className="font-data-metric-sm text-stone-400 mt-0.5 text-xs font-mono">
-                    Awaiting Signal Batch
-                  </span>
+              <div className="bg-white border border-[#e5e5df] rounded-xl p-4 shadow-xs">
+                <div className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Cash Reserve</div>
+                <div className="text-xl font-bold font-mono text-stone-900 mt-1">
+                  ₹{liveMarket.cashBalance.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                 </div>
-                <div className="flex-1 h-px bg-[#e5e5df] mx-2 relative min-w-[20px]">
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 border-t border-r border-stone-400 rotate-45"></div>
-                </div>
+                <div className="text-[11px] text-stone-500 mt-0.5">21.0% Liquid Capital</div>
+              </div>
 
-                {/* Node 4 */}
-                <div className="flex flex-col w-48 shrink-0 bg-[#f8f8f6] border border-[#e5e5df] rounded-lg p-3 relative opacity-70 shadow-2xs">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-label-caps text-[10px] font-bold text-stone-500 uppercase tracking-wider">
-                      Portfolio
-                    </span>
-                    <span className="material-symbols-outlined text-[16px] text-stone-400">
-                      hourglass_empty
-                    </span>
-                  </div>
-                  <span className="font-body-sm text-body-sm text-stone-600 font-medium">
-                    {isHalted ? "Liquidated" : "Idle"}
-                  </span>
-                  <span className="font-data-metric-sm text-stone-400 mt-0.5 text-xs font-mono">
-                    {isHalted ? "100% Cash" : "Standing By"}
-                  </span>
+              <div className="bg-white border border-[#e5e5df] rounded-xl p-4 shadow-xs">
+                <div className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Active Positions</div>
+                <div className="text-xl font-bold font-mono text-orange-600 mt-1">
+                  {isHalted ? "0" : liveMarket.openPositionsCount} Stocks
+                </div>
+                <div className="text-[11px] text-stone-500 mt-0.5">
+                  {isHalted ? "100% Cash" : "NSE Large-Cap Basket"}
                 </div>
               </div>
             </div>
 
-            {/* Split Grid */}
+            {/* Live Positions Table */}
+            <div className="bg-white border border-[#e5e5df] rounded-xl overflow-hidden shadow-xs">
+              <div className="p-4 border-b border-[#e5e5df] flex justify-between items-center bg-[#f8f8f6]/70">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                  <h3 className="font-headline-md text-sm font-bold text-stone-900">
+                    Live Open Positions (Mark-to-Market)
+                  </h3>
+                </div>
+                <span className="text-[11px] font-mono text-stone-500">Updated: {liveMarket.lastUpdate}</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left whitespace-nowrap text-xs">
+                  <thead className="bg-[#eeeeea] border-b border-[#e5e5df]">
+                    <tr>
+                      <th className="py-2.5 px-4 font-semibold text-stone-600">Stock</th>
+                      <th className="py-2.5 px-4 font-semibold text-stone-600">Qty</th>
+                      <th className="py-2.5 px-4 font-semibold text-stone-600">Entry Price</th>
+                      <th className="py-2.5 px-4 font-semibold text-stone-600">Live Price (NSE)</th>
+                      <th className="py-2.5 px-4 font-semibold text-stone-600">Day Chg</th>
+                      <th className="py-2.5 px-4 font-semibold text-stone-600">Market Value</th>
+                      <th className="py-2.5 px-4 font-semibold text-stone-600">Unrealized PnL</th>
+                      <th className="py-2.5 px-4 font-semibold text-stone-600">Weight</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#f0f0ec] font-mono">
+                    {isHalted ? (
+                      <tr>
+                        <td colSpan={8} className="py-6 text-center text-rose-700 font-sans font-semibold">
+                          All positions liquidated to 100% Cash due to Emergency Kill Switch.
+                        </td>
+                      </tr>
+                    ) : (
+                      liveMarket.positions.map((pos) => (
+                        <tr key={pos.symbol} className="hover:bg-[#f5f5f2] transition-colors">
+                          <td className="py-3 px-4 font-bold font-sans text-stone-900">{pos.symbol}</td>
+                          <td className="py-3 px-4 text-stone-700">{pos.qty}</td>
+                          <td className="py-3 px-4 text-stone-600">₹{pos.entryPrice.toLocaleString("en-IN")}</td>
+                          <td className="py-3 px-4 font-bold text-stone-900">₹{pos.currentPrice.toLocaleString("en-IN")}</td>
+                          <td className={`py-3 px-4 font-bold ${pos.dayChange >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                            {pos.dayChange >= 0 ? "+" : ""}{pos.dayChangePct}%
+                          </td>
+                          <td className="py-3 px-4 text-stone-800">₹{pos.marketValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</td>
+                          <td className={`py-3 px-4 font-bold ${pos.unrealizedPnL >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                            {pos.unrealizedPnL >= 0 ? "+" : ""}₹{pos.unrealizedPnL.toLocaleString("en-IN", { maximumFractionDigits: 0 })} ({pos.pnlPct}%)
+                          </td>
+                          <td className="py-3 px-4 font-sans text-stone-600">{pos.weightPct}%</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Split Grid: Risk Gate & Activity Log */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
               {/* Pre-Trade Risk Gate */}
-              <div className="lg:col-span-1 bg-white border border-[#e5e5df] rounded-lg flex flex-col h-[480px] shadow-xs">
+              <div className="lg:col-span-1 bg-white border border-[#e5e5df] rounded-xl flex flex-col h-[460px] shadow-xs">
                 <div className="p-4 border-b border-[#e5e5df] flex items-center justify-between bg-[#f8f8f6]/70">
-                  <h3 className="font-headline-md text-headline-md text-stone-900 font-semibold flex items-center gap-2">
-                    <span className="material-symbols-outlined text-orange-600">security</span>
+                  <h3 className="font-headline-md text-sm text-stone-900 font-bold flex items-center gap-2">
+                    <span className="material-symbols-outlined text-orange-600 text-base">security</span>
                     Pre-Trade Risk Gate
                   </h3>
                   <span className="font-label-caps text-[10px] font-bold text-stone-400 uppercase tracking-wider">
-                    2m ago
+                    Hardware Latch
                   </span>
                 </div>
-                <div className="p-5 flex-1 overflow-y-auto flex flex-col gap-4">
-                  <div className={`border rounded-lg p-4 flex flex-col items-center justify-center text-center shadow-2xs ${isHalted ? "bg-rose-50 border-rose-200" : "bg-emerald-50 border-emerald-200"}`}>
-                    <span className={`material-symbols-outlined text-3xl mb-1 ${isHalted ? "text-rose-600" : "text-emerald-600"}`}>
+                <div className="p-4 flex-1 overflow-y-auto flex flex-col gap-3">
+                  <div className={`border rounded-xl p-3.5 flex flex-col items-center justify-center text-center shadow-2xs ${isHalted ? "bg-rose-50 border-rose-200" : "bg-emerald-50 border-emerald-200"}`}>
+                    <span className={`material-symbols-outlined text-2xl mb-1 ${isHalted ? "text-rose-600" : "text-emerald-600"}`}>
                       {isHalted ? "gpp_bad" : "verified_user"}
                     </span>
-                    <span className={`font-headline-xl text-headline-xl font-bold tracking-tight ${isHalted ? "text-rose-800" : "text-emerald-800"}`}>
+                    <span className={`font-headline-xl text-base font-bold tracking-tight ${isHalted ? "text-rose-800" : "text-emerald-800"}`}>
                       {isHalted ? "HALTED" : "APPROVED"}
                     </span>
-                    <span className={`font-body-sm text-body-sm mt-0.5 text-xs font-medium ${isHalted ? "text-rose-700" : "text-emerald-800"}`}>
-                      {isHalted ? "Trading halted by Kill Switch" : "All 6 risk constraints satisfied for target portfolio"}
+                    <span className={`font-body-sm text-[11px] mt-0.5 font-medium ${isHalted ? "text-rose-700" : "text-emerald-800"}`}>
+                      {isHalted ? "Trading halted by Kill Switch" : "All 6 risk constraints satisfied"}
                     </span>
                   </div>
 
-                  <div className="flex flex-col gap-1.5 mt-1">
+                  <div className="flex flex-col gap-1 mt-1 text-xs">
                     {riskConstraints.map((rc) => (
                       <div key={rc.name} className="flex items-center justify-between p-2 rounded-lg hover:bg-[#f5f5f2] transition-colors">
-                        <span className="font-body-sm text-body-sm text-stone-800 font-medium">
+                        <span className="font-body-sm text-stone-800 font-medium">
                           {rc.name}
                         </span>
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-xs font-semibold text-stone-500">
                             {rc.limit}
                           </span>
-                          <span className={`material-symbols-outlined text-[18px] font-bold ${rc.status === "APPROVED" ? "text-emerald-600" : "text-rose-600"}`}>
+                          <span className={`material-symbols-outlined text-base font-bold ${rc.status === "APPROVED" ? "text-emerald-600" : "text-rose-600"}`}>
                             {rc.status === "APPROVED" ? "check" : "close"}
                           </span>
                         </div>
@@ -586,10 +454,10 @@ export default function CommandCenter() {
               </div>
 
               {/* Activity Log */}
-              <div className="lg:col-span-2 bg-white border border-[#e5e5df] rounded-lg flex flex-col h-[480px] shadow-xs">
+              <div className="lg:col-span-2 bg-white border border-[#e5e5df] rounded-xl flex flex-col h-[460px] shadow-xs">
                 <div className="p-4 border-b border-[#e5e5df] flex items-center justify-between bg-[#f8f8f6]/70 relative">
-                  <h3 className="font-headline-md text-headline-md text-stone-900 font-semibold flex items-center gap-2">
-                    <span className="material-symbols-outlined text-orange-600">list_alt</span>
+                  <h3 className="font-headline-md text-sm text-stone-900 font-bold flex items-center gap-2">
+                    <span className="material-symbols-outlined text-orange-600 text-base">list_alt</span>
                     Autonomous Activity Log
                   </h3>
                   
@@ -626,42 +494,43 @@ export default function CommandCenter() {
                   <table className="w-full text-left border-collapse">
                     <thead className="sticky top-0 bg-[#eeeeea] z-10 border-b border-[#e5e5df]">
                       <tr>
-                        <th className="py-3 px-4 font-label-caps text-stone-500 uppercase tracking-wider text-[11px] font-semibold w-24">
+                        <th className="py-2.5 px-4 font-label-caps text-stone-500 uppercase tracking-wider text-[11px] font-semibold w-24">
                           Time
                         </th>
-                        <th className="py-3 px-4 font-label-caps text-stone-500 uppercase tracking-wider text-[11px] font-semibold w-32">
+                        <th className="py-2.5 px-4 font-label-caps text-stone-500 uppercase tracking-wider text-[11px] font-semibold w-32">
                           Agent
                         </th>
-                        <th className="py-3 px-4 font-label-caps text-stone-500 uppercase tracking-wider text-[11px] font-semibold">
+                        <th className="py-2.5 px-4 font-label-caps text-stone-500 uppercase tracking-wider text-[11px] font-semibold">
                           Action / Decision
                         </th>
-                        <th className="py-3 px-4 font-label-caps text-stone-500 uppercase tracking-wider text-[11px] font-semibold w-52">
+                        <th className="py-2.5 px-4 font-label-caps text-stone-500 uppercase tracking-wider text-[11px] font-semibold w-52">
                           Evidence / Meta
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="font-data-metric-sm font-mono text-xs text-stone-800 divide-y divide-[#f0f0ec]">
+                    <tbody className="font-mono text-xs text-stone-800 divide-y divide-[#f0f0ec]">
                       {filteredLogs.map((log) => (
                         <tr key={log.id} className="hover:bg-[#f5f5f2] transition-colors">
-                          <td className="py-3 px-4 text-stone-500">
+                          <td className="py-2.5 px-4 text-stone-500">
                             {log.timestamp}
                           </td>
-                          <td className="py-3 px-4">
+                          <td className="py-2.5 px-4">
                             <span className={`px-2 py-0.5 rounded-full font-sans font-semibold border ${
-                              log.agent === "Strategy" ? "bg-orange-50 border-orange-200 text-orange-700" :
-                              log.agent === "Market" ? "bg-amber-50 border-amber-200 text-amber-800" :
-                              log.agent === "Portfolio" ? "bg-blue-50 border-blue-200 text-blue-700" :
-                              log.agent === "Execution" ? "bg-emerald-50 border-emerald-200 text-emerald-800" :
-                              log.status === "breach" ? "bg-rose-50 border-rose-200 text-rose-800" :
-                              "bg-[#eeeeea] border-[#e5e5df] text-stone-700"
+                              log.agent === "Risk"
+                                ? "bg-rose-50 text-rose-800 border-rose-200"
+                                : log.agent === "Execution"
+                                ? "bg-purple-50 text-purple-800 border-purple-200"
+                                : log.agent === "Strategy"
+                                ? "bg-amber-50 text-amber-800 border-amber-200"
+                                : "bg-blue-50 text-blue-800 border-blue-200"
                             }`}>
                               {log.agent}
                             </span>
                           </td>
-                          <td className="py-3 px-4 font-sans font-medium text-stone-900">
+                          <td className="py-2.5 px-4 font-sans text-stone-900 font-medium">
                             {log.action}
                           </td>
-                          <td className="py-3 px-4 text-stone-500 truncate max-w-[200px]" title={log.evidence}>
+                          <td className="py-2.5 px-4 text-stone-500 text-[11px]">
                             {log.evidence}
                           </td>
                         </tr>
@@ -671,10 +540,10 @@ export default function CommandCenter() {
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </main>
     </div>
   );
 }
-
