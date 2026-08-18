@@ -1,0 +1,465 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Autonomous Command Center - Quant Alpha</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#00354a",
+                        "on-primary-fixed-variant": "#004c69",
+                        "surface-tint": "#7bd0ff",
+                        "surface-container": "#1b2024",
+                        "on-secondary": "#233143",
+                        "primary-fixed": "#c4e7ff",
+                        "surface": "#0f1418",
+                        "outline": "#87929a",
+                        "surface-dim": "#0f1418",
+                        "inverse-on-surface": "#2c3135",
+                        "error-container": "#93000a",
+                        "tertiary": "#ffc176",
+                        "on-surface": "#dee3e8",
+                        "tertiary-fixed-dim": "#ffb960",
+                        "on-tertiary": "#472a00",
+                        "on-primary-container": "#004965",
+                        "inverse-primary": "#00668a",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "tertiary-container": "#f1a02b",
+                        "surface-variant": "#303539",
+                        "tertiary-fixed": "#ffddb8",
+                        "surface-container-highest": "#303539",
+                        "outline-variant": "#3e484f",
+                        "on-error-container": "#ffdad6",
+                        "on-error": "#690005",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-surface-variant": "#bdc8d1",
+                        "surface-container-low": "#171c20",
+                        "primary": "#8ed5ff",
+                        "surface-container-high": "#252b2e",
+                        "primary-fixed-dim": "#7bd0ff",
+                        "background": "#0f1418",
+                        "on-secondary-fixed-variant": "#39485a",
+                        "on-primary-fixed": "#001e2c",
+                        "surface-container-lowest": "#0a0f12",
+                        "secondary-fixed": "#d4e4fa",
+                        "inverse-surface": "#dee3e8",
+                        "on-background": "#dee3e8",
+                        "secondary-container": "#39485a",
+                        "error": "#ffb4ab",
+                        "primary-container": "#38bdf8",
+                        "on-secondary-container": "#a7b6cc",
+                        "on-tertiary-container": "#613b00",
+                        "secondary-fixed-dim": "#b9c8de",
+                        "secondary": "#b9c8de",
+                        "on-secondary-fixed": "#0d1c2d",
+                        "surface-bright": "#343a3e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "8px",
+                        "gutter": "16px",
+                        "xl": "32px",
+                        "base": "4px",
+                        "margin-page": "24px",
+                        "md": "16px",
+                        "sm": "12px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "data-metric-lg": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "data-metric-sm": ["JetBrains Mono"],
+                        "label-caps": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "data-metric-lg": ["20px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-xl": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "data-metric-sm": ["14px", {"lineHeight": "18px", "fontWeight": "500"}],
+                        "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #3e484f;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #87929a;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-sm antialiased h-screen overflow-hidden flex selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar (from JSON, modified active state for Context) -->
+<aside class="w-60 h-full fixed left-0 top-0 border-r border-outline-variant bg-surface-container flex flex-col z-20">
+<!-- Brand Header -->
+<div class="px-6 py-6 border-b border-outline-variant flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-3xl">token</span>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface">QUANT ALPHA</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase">Research Pipeline</p>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<div class="flex flex-col gap-1 py-4 flex-1 overflow-y-auto custom-scrollbar">
+<div class="px-6 pb-2 pt-1 font-label-caps text-label-caps text-on-surface-variant uppercase">Research</div>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3 scale-98 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="font-body-sm text-body-sm">Overview</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3 scale-98 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">science</span>
+<span class="font-body-sm text-body-sm">Research</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3 scale-98 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">database</span>
+<span class="font-body-sm text-body-sm">Data</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3 scale-98 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">analytics</span>
+<span class="font-body-sm text-body-sm">Signals</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3 scale-98 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">rule</span>
+<span class="font-body-sm text-body-sm">Validation</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3 scale-98 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">history</span>
+<span class="font-body-sm text-body-sm">Backtests</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3 scale-98 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">account_balance</span>
+<span class="font-body-sm text-body-sm">Portfolio</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3 scale-98 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">description</span>
+<span class="font-body-sm text-body-sm">Reports</span>
+</a>
+<!-- Active State for Live/Autonomous Monitor Context -->
+<a class="bg-primary-container text-on-primary-container font-semibold rounded-lg mx-2 px-3 py-2 flex items-center gap-3 scale-98 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">monitoring</span>
+<span class="font-body-sm text-body-sm">Live Monitor</span>
+</a>
+<div class="px-6 pb-2 pt-6 font-label-caps text-label-caps text-on-surface-variant uppercase">System</div>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3 scale-98 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">storage</span>
+<span class="font-body-sm text-body-sm">Data Sources</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3 scale-98 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">precision_manufacturing</span>
+<span class="font-body-sm text-body-sm">Pipeline Runs</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3 scale-98 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="font-body-sm text-body-sm">Settings</span>
+</a>
+</div>
+<!-- Footer / System Status -->
+<div class="px-4 py-4 border-t border-outline-variant bg-surface-container-low flex flex-col gap-3">
+<div class="flex items-center justify-between px-2">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(142,213,255,0.6)]"></div>
+<span class="font-body-sm text-body-sm text-on-surface">System Status</span>
+</div>
+<span class="font-data-metric-sm text-data-metric-sm text-primary tracking-tighter">Autonomy Active</span>
+</div>
+<div class="flex items-center justify-between px-2 text-on-surface-variant">
+<span class="font-body-sm text-body-sm">Last Update</span>
+<span class="font-data-metric-sm text-data-metric-sm tracking-tighter">2s ago</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-60 flex-1 flex flex-col h-full bg-surface">
+<!-- TopAppBar (from JSON) -->
+<header class="h-16 w-full sticky top-0 z-10 border-b border-outline-variant bg-surface flex items-center justify-between px-margin-page">
+<div class="flex items-center gap-4">
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md text-on-surface">Research Dashboard</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Autonomous Command Center</span>
+</div>
+</div>
+<!-- Contextual Navigation / Filters -->
+<div class="flex items-center gap-6 hidden lg:flex">
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Environment</span>
+<button class="flex items-center gap-1 font-body-sm text-body-sm text-on-surface hover:text-primary transition-colors">
+                        Research <span class="material-symbols-outlined text-[16px]">expand_more</span>
+</button>
+</div>
+<div class="h-8 w-px bg-outline-variant"></div>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Dataset</span>
+<button class="flex items-center gap-1 font-body-sm text-body-sm text-on-surface hover:text-primary transition-colors">
+                        US Equities <span class="material-symbols-outlined text-[16px]">expand_more</span>
+</button>
+</div>
+<div class="h-8 w-px bg-outline-variant"></div>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Date Range</span>
+<button class="flex items-center gap-2 font-data-metric-sm text-data-metric-sm text-on-surface hover:text-primary transition-colors">
+                        2015-01-01 <span class="material-symbols-outlined text-[14px]">arrow_forward</span> 2026-08-18 <span class="material-symbols-outlined text-[16px]">calendar_today</span>
+</button>
+</div>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-6 mr-4 border-r border-outline-variant pr-6">
+<div class="flex flex-col items-end">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">System Status</span>
+<div class="flex items-center gap-1.5 text-primary">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span class="font-body-sm text-body-sm">Healthy</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Last Run</span>
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="font-data-metric-sm text-data-metric-sm tracking-tighter">8m ago</span>
+<span class="material-symbols-outlined text-[14px] text-primary">check_circle</span>
+</div>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-variant border border-outline-variant flex items-center justify-center font-label-caps text-label-caps text-on-surface">
+                    AK
+                </div>
+</div>
+</header>
+<!-- Scrollable Content Canvas -->
+<div class="flex-1 overflow-y-auto custom-scrollbar p-margin-page bg-surface-dim">
+<div class="max-w-[1600px] mx-auto flex flex-col gap-gutter">
+<!-- Autonomy Mode Banner & Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
+<div>
+<h2 class="font-headline-xl text-headline-xl text-on-surface mb-1 tracking-tight">Autonomous Command Center</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Autonomous research and operations monitoring.</p>
+</div>
+<!-- Mode Toggles -->
+<div class="flex bg-surface-container-high rounded-lg p-1 border border-outline-variant">
+<button class="px-4 py-1.5 rounded font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors rounded-lg">Manual</button>
+<button class="px-4 py-1.5 rounded font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors rounded-lg">Assisted</button>
+<button class="px-4 py-1.5 rounded font-body-sm text-body-sm bg-primary-container text-on-primary-container font-medium flex items-center gap-2 rounded-lg">
+<span class="material-symbols-outlined text-[16px]">smart_toy</span>
+                            Auto Paper
+                        </button>
+<button class="px-4 py-1.5 rounded font-body-sm text-body-sm text-on-surface-variant opacity-50 cursor-not-allowed flex items-center gap-1.5 rounded-lg">
+                            Live <span class="material-symbols-outlined text-[14px]">lock</span>
+</button>
+</div>
+</div>
+<!-- Agent Workflow Visualization -->
+<div class="bg-surface-container border border-outline-variant rounded-lg p-5 shadow-[0_10px_15px_-3px_rgba(0,0,0,0.3)]">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">account_tree</span>
+                            Agent Workflow Status
+                        </h3>
+<span class="px-2.5 py-1 rounded-full bg-primary-container/20 text-primary border border-primary/30 font-label-caps text-label-caps uppercase flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span> Processing Epoch 42
+                        </span>
+</div>
+<div class="flex items-center justify-between w-full overflow-x-auto pb-2 custom-scrollbar">
+<!-- Node 1 -->
+<div class="flex flex-col w-48 shrink-0 bg-surface border border-outline-variant rounded-lg p-3 relative">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Market Data</span>
+<span class="material-symbols-outlined text-[16px] text-primary">check_circle</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Ingestion Complete</span>
+<span class="font-data-metric-sm text-data-metric-sm text-on-surface-variant mt-1 text-xs truncate tracking-tighter">Parsed 14.2M ticks</span>
+</div>
+<div class="flex-1 h-px bg-outline-variant mx-2 relative min-w-[20px] opacity-40">
+<div class="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 border-t border-r border-outline-variant rotate-45"></div>
+</div>
+<!-- Node 2 -->
+<div class="flex flex-col w-48 shrink-0 bg-surface border border-outline-variant rounded-lg p-3 relative border-primary shadow-[0_0_10px_rgba(56,189,248,0.1)]">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Strategy Agent</span>
+<span class="material-symbols-outlined text-[16px] text-primary animate-spin">refresh</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface font-medium text-primary">Scanning Signals</span>
+<span class="font-data-metric-sm text-data-metric-sm text-on-surface-variant mt-1 text-xs truncate tracking-tighter">Detected momentum in AAPL</span>
+</div>
+<div class="flex-1 h-px bg-outline-variant mx-2 relative min-w-[20px] opacity-40">
+<div class="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 border-t border-r border-outline-variant rotate-45"></div>
+</div>
+<!-- Node 3 -->
+<div class="flex flex-col w-48 shrink-0 bg-surface border border-outline-variant rounded-lg p-3 relative opacity-60">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Risk Gate</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">hourglass_empty</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Pending Review</span>
+<span class="font-data-metric-sm text-data-metric-sm text-on-surface-variant mt-1 text-xs truncate tracking-tighter">Awaiting Strategy Output</span>
+</div>
+<div class="flex-1 h-px bg-outline-variant mx-2 relative min-w-[20px] opacity-40">
+<div class="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 border-t border-r border-outline-variant rotate-45"></div>
+</div>
+<!-- Node 4 -->
+<div class="flex flex-col w-48 shrink-0 bg-surface border border-outline-variant rounded-lg p-3 relative opacity-60">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Portfolio</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">hourglass_empty</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Idle</span>
+<span class="font-data-metric-sm text-data-metric-sm text-on-surface-variant mt-1 text-xs truncate tracking-tighter">-</span>
+</div>
+</div>
+</div>
+<!-- Bento Grid Layout for Details -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Left Col: Risk Gate Approval (Focus on specific checklist) -->
+<div class="lg:col-span-1 bg-surface-container border border-outline-variant rounded-lg flex flex-col h-[500px] shadow-[0_10px_15px_-3px_rgba(0,0,0,0.3)]">
+<div class="p-4 border-b border-outline-variant flex items-center justify-between">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined">security</span>
+                                Pre-Trade Risk Gate
+                            </h3>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Last Run: 2m ago</span>
+</div>
+<div class="p-5 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4">
+<!-- Big Verdict -->
+<div class="bg-surface border border-primary/30 rounded-lg p-4 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-4xl text-primary mb-2">verified_user</span>
+<span class="font-headline-xl text-headline-xl text-primary tracking-tight">APPROVED</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">All 6 constraints satisfied for proposed vector</span>
+</div>
+<!-- Checklist -->
+<div class="flex flex-col gap-2 mt-2">
+<div class="flex items-center justify-between p-2 rounded hover:bg-surface-variant transition-colors">
+<span class="font-body-sm text-body-sm text-on-surface">Position Limits</span>
+<div class="flex items-center gap-2">
+<span class="font-data-metric-sm text-data-metric-sm text-on-surface-variant tracking-tighter">Max 5%</span>
+<span class="material-symbols-outlined text-[18px] text-primary">check</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-2 rounded hover:bg-surface-variant transition-colors">
+<span class="font-body-sm text-body-sm text-on-surface">Beta Constraint</span>
+<div class="flex items-center gap-2">
+<span class="font-data-metric-sm text-data-metric-sm text-on-surface-variant tracking-tighter">[-0.1, 0.1]</span>
+<span class="material-symbols-outlined text-[18px] text-primary">check</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-2 rounded hover:bg-surface-variant transition-colors">
+<span class="font-body-sm text-body-sm text-on-surface">Sector Exposure</span>
+<div class="flex items-center gap-2">
+<span class="font-data-metric-sm text-data-metric-sm text-on-surface-variant tracking-tighter">&lt; 15%</span>
+<span class="material-symbols-outlined text-[18px] text-primary">check</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-2 rounded hover:bg-surface-variant transition-colors">
+<span class="font-body-sm text-body-sm text-on-surface">Expected Drawdown</span>
+<div class="flex items-center gap-2">
+<span class="font-data-metric-sm text-data-metric-sm text-on-surface-variant tracking-tighter">&lt; 8%</span>
+<span class="material-symbols-outlined text-[18px] text-primary">check</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-2 rounded hover:bg-surface-variant transition-colors">
+<span class="font-body-sm text-body-sm text-on-surface">Signal Freshness</span>
+<div class="flex items-center gap-2">
+<span class="font-data-metric-sm text-data-metric-sm text-on-surface-variant tracking-tighter">&lt; 50ms</span>
+<span class="material-symbols-outlined text-[18px] text-primary">check</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-2 rounded hover:bg-surface-variant transition-colors">
+<span class="font-body-sm text-body-sm text-on-surface">Est. Tx Cost</span>
+<div class="flex items-center gap-2">
+<span class="font-data-metric-sm text-data-metric-sm text-on-surface-variant tracking-tighter">&lt; 2 bps</span>
+<span class="material-symbols-outlined text-[18px] text-primary">check</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Col: Agent Activity Log -->
+<div class="lg:col-span-2 bg-surface-container border border-outline-variant rounded-lg flex flex-col h-[500px] shadow-[0_10px_15px_-3px_rgba(0,0,0,0.3)]">
+<div class="p-4 border-b border-outline-variant flex items-center justify-between">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined">list_alt</span>
+                                Autonomous Activity Log
+                            </h3>
+<button class="font-label-caps text-label-caps text-on-surface-variant hover:text-on-surface uppercase flex items-center gap-1">
+                                Filter <span class="material-symbols-outlined text-[14px]">filter_list</span>
+</button>
+</div>
+<div class="p-0 flex-1 overflow-y-auto custom-scrollbar">
+<table class="w-full text-left border-collapse">
+<thead class="sticky top-0 bg-surface-container z-10 border-b border-outline-variant">
+<tr>
+<th class="py-3 px-4 font-label-caps text-label-caps text-on-surface-variant uppercase w-24">Time</th>
+<th class="py-3 px-4 font-label-caps text-label-caps text-on-surface-variant uppercase w-32">Agent</th>
+<th class="py-3 px-4 font-label-caps text-label-caps text-on-surface-variant uppercase">Action / Decision</th>
+<th class="py-3 px-4 font-label-caps text-label-caps text-on-surface-variant uppercase w-48">Evidence / Meta</th>
+</tr>
+</thead>
+<tbody class="font-data-metric-sm text-data-metric-sm text-on-surface">
+<tr class="border-b border-outline-variant hover:bg-surface-variant/50 transition-colors">
+<td class="py-3 px-4 text-on-surface-variant">10:42:05</td>
+<td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-surface border border-outline-variant text-primary">Strategy</span></td>
+<td class="py-3 px-4 text-on-surface">Initiated long vector synthesis</td>
+<td class="py-3 px-4 text-on-surface-variant text-xs">Trigger: Volatility regime shift</td>
+</tr>
+<tr class="border-b border-outline-variant hover:bg-surface-variant/50 transition-colors">
+<td class="py-3 px-4 text-on-surface-variant">10:41:12</td>
+<td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-surface border border-outline-variant text-tertiary">Market</span></td>
+<td class="py-3 px-4 text-on-surface">Detected anomaly in VIX futures curve</td>
+<td 50="" border-b="" border-outline-variant="" class="py-3 px-4 text-on-surface-variant text-xs z-score: +3.2σ&lt;/td&gt; &lt;/tr&gt; &lt;tr class=" hover:bg-surface-variant="" transition-colors"="">
+</td><td class="py-3 px-4 text-on-surface-variant">10:38:50</td>
+<td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-surface border border-outline-variant text-primary-container">Portfolio</span></td>
+<td class="py-3 px-4 text-on-surface">Rebalanced sector weights (Tech -2%, Util +2%)</td>
+<td class="py-3 px-4 text-on-surface-variant text-xs">Tracking error optimization</td>
+</tr>
+<tr class="border-b border-outline-variant hover:bg-surface-variant/50 transition-colors">
+<td class="py-3 px-4 text-on-surface-variant">10:35:01</td>
+<td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-surface border border-outline-variant text-on-surface">Execution</span></td>
+<td class="py-3 px-4 text-on-surface">Filled order basket #8829</td>
+<td class="py-3 px-4 text-on-surface-variant text-xs">Slippage: +0.01 bps</td>
+</tr>
+<tr class="border-b border-outline-variant hover:bg-surface-variant/50 transition-colors opacity-70">
+<td class="py-3 px-4 text-on-surface-variant">10:30:00</td>
+<td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-surface border border-outline-variant text-outline">Risk</span></td>
+<td class="py-3 px-4 text-on-surface">Routine margin check passed</td>
+<td class="py-3 px-4 text-on-surface-variant text-xs">Utilization: 42%</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+
+
+</body></html>

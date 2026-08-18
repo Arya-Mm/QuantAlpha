@@ -85,7 +85,7 @@ export default function OverviewDashboard() {
           </Link>
           <Link
             className="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors rounded-lg mx-2 px-3 py-2 flex items-center gap-3"
-            href="#"
+            href="/command-center"
           >
             <span className="material-symbols-outlined">monitoring</span>
             <span className="font-body-sm text-body-sm">Live Monitor</span>

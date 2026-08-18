@@ -137,3 +137,20 @@ body {
   color: var(--color-on-background, #dee3e8);
   font-family: 'Inter', sans-serif;
 }
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #3e484f;
+      border-radius: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #87929a;
+  }
+}
