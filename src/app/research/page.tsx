@@ -2,45 +2,45 @@ import Link from "next/link";
 
 export default function Research() {
   return (
-    <div className="bg-surface text-on-surface font-body-sm text-body-sm min-h-screen flex antialiased w-full">
-      {/* SideNavBar (Shared Component) */}
-      <nav className="w-60 h-full fixed left-0 top-0 bg-surface-container-low dark:bg-surface-container-lowest border-r border-outline-variant dark:border-outline-variant flex flex-col py-lg z-20">
+    <div className="bg-slate-50 text-slate-900 font-body-sm text-body-sm min-h-screen flex antialiased w-full">
+      {/* SideNavBar */}
+      <nav className="w-60 h-full fixed left-0 top-0 bg-white border-r border-slate-200 flex flex-col py-4 z-20 shadow-xs">
         {/* Brand / Header */}
-        <div className="px-md mb-xl flex items-center gap-sm">
-          <div className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-primary border border-primary/30">
+        <div className="px-6 mb-6 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-orange-500 flex items-center justify-center text-white shadow-2xs">
             <span
               className="material-symbols-outlined text-[20px]"
               style={{ fontVariationSettings: "'FILL' 1" }}
             >
-              terminal
+              show_chart
             </span>
           </div>
           <div>
-            <h1 className="text-headline-md font-headline-md font-bold text-primary dark:text-primary tracking-tight">
-              QuantTerminal
+            <h1 className="text-headline-md font-headline-md font-bold text-slate-900 tracking-tight">
+              QUANT ALPHA
             </h1>
-            <p className="text-label-caps font-label-caps text-on-surface-variant uppercase">
-              Institutional Research
+            <p className="text-label-caps text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+              Research Pipeline
             </p>
           </div>
         </div>
 
         {/* Main Navigation Tabs */}
-        <div className="flex-1 flex flex-col gap-base px-sm">
-          {/* Overview (Inactive) */}
+        <div className="flex-1 flex flex-col gap-1 px-2">
+          {/* Overview */}
           <Link
-            className="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-colors group"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
             href="/"
           >
-            <span className="material-symbols-outlined text-[20px] group-hover:text-on-surface transition-colors">
+            <span className="material-symbols-outlined text-[20px]">
               dashboard
             </span>
-            <span className="font-body-sm text-body-sm">Overview</span>
+            <span className="font-body-sm text-body-sm font-medium">Overview</span>
           </Link>
 
           {/* Research (ACTIVE) */}
           <Link
-            className="flex items-center gap-md px-md py-sm rounded-DEFAULT text-primary dark:text-primary bg-primary-container/10 border-r-2 border-primary opacity-90 transition-all duration-150"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-orange-600 bg-orange-50 font-semibold border border-orange-200/70 transition-all"
             href="/research"
           >
             <span
@@ -54,302 +54,286 @@ export default function Research() {
             </span>
           </Link>
 
-          {/* Signals (Inactive) */}
+          {/* Signals */}
           <Link
-            className="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-colors group"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
             href="#"
           >
-            <span className="material-symbols-outlined text-[20px] group-hover:text-on-surface transition-colors">
+            <span className="material-symbols-outlined text-[20px]">
               analytics
             </span>
-            <span className="font-body-sm text-body-sm">Signals</span>
+            <span className="font-body-sm text-body-sm font-medium">Signals</span>
           </Link>
 
-          {/* Validation (Inactive) */}
+          {/* Validation */}
           <Link
-            className="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-colors group"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
             href="#"
           >
-            <span className="material-symbols-outlined text-[20px] group-hover:text-on-surface transition-colors">
+            <span className="material-symbols-outlined text-[20px]">
               rule
             </span>
-            <span className="font-body-sm text-body-sm">Validation</span>
+            <span className="font-body-sm text-body-sm font-medium">Validation</span>
           </Link>
 
-          {/* Backtests (Inactive) */}
+          {/* Backtests */}
           <Link
-            className="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-colors group"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
             href="/backtests"
           >
-            <span className="material-symbols-outlined text-[20px] group-hover:text-on-surface transition-colors">
-              history_edu
+            <span className="material-symbols-outlined text-[20px]">
+              history
             </span>
-            <span className="font-body-sm text-body-sm">Backtests</span>
+            <span className="font-body-sm text-body-sm font-medium">Backtests</span>
           </Link>
 
-          {/* Portfolio (Inactive) */}
+          {/* Portfolio */}
           <Link
-            className="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-colors group"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
             href="#"
           >
-            <span className="material-symbols-outlined text-[20px] group-hover:text-on-surface transition-colors">
-              account_balance_wallet
+            <span className="material-symbols-outlined text-[20px]">
+              account_balance
             </span>
-            <span className="font-body-sm text-body-sm">Portfolio</span>
+            <span className="font-body-sm text-body-sm font-medium">Portfolio</span>
           </Link>
 
-          {/* Reports (Inactive) */}
+          {/* Reports */}
           <Link
-            className="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-colors group"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
             href="#"
           >
-            <span className="material-symbols-outlined text-[20px] group-hover:text-on-surface transition-colors">
+            <span className="material-symbols-outlined text-[20px]">
               description
             </span>
-            <span className="font-body-sm text-body-sm">Reports</span>
+            <span className="font-body-sm text-body-sm font-medium">Reports</span>
           </Link>
 
-          {/* Command Center (Inactive) */}
+          {/* Command Center */}
           <Link
-            className="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-colors group"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
             href="/command-center"
           >
-            <span className="material-symbols-outlined text-[20px] group-hover:text-on-surface transition-colors">
+            <span className="material-symbols-outlined text-[20px]">
               monitoring
             </span>
-            <span className="font-body-sm text-body-sm">Live Monitor</span>
+            <span className="font-body-sm text-body-sm font-medium">Live Monitor</span>
           </Link>
         </div>
 
         {/* Footer Tabs */}
-        <div className="flex flex-col gap-base px-sm mt-auto pt-lg border-t border-outline-variant/30">
-          {/* Settings */}
+        <div className="flex flex-col gap-1 px-2 mt-auto pt-4 border-t border-slate-200">
           <Link
-            className="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-colors group"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
             href="#"
           >
-            <span className="material-symbols-outlined text-[20px] group-hover:text-on-surface transition-colors">
+            <span className="material-symbols-outlined text-[20px]">
               settings
             </span>
-            <span className="font-body-sm text-body-sm">Settings</span>
+            <span className="font-body-sm text-body-sm font-medium">Settings</span>
           </Link>
-          {/* Support */}
           <Link
-            className="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-colors group"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
             href="#"
           >
-            <span className="material-symbols-outlined text-[20px] group-hover:text-on-surface transition-colors">
+            <span className="material-symbols-outlined text-[20px]">
               help
             </span>
-            <span className="font-body-sm text-body-sm">Support</span>
+            <span className="font-body-sm text-body-sm font-medium">Support</span>
           </Link>
         </div>
       </nav>
 
-      {/* TopAppBar (Shared Component) */}
-      <header className="fixed top-0 right-0 h-16 w-[calc(100%-240px)] bg-surface-container-low dark:bg-surface-container-low border-b border-outline-variant dark:border-outline-variant flex justify-between items-center px-lg z-10 backdrop-blur-sm bg-opacity-95">
+      {/* TopAppBar */}
+      <header className="fixed top-0 right-0 h-16 w-[calc(100%-240px)] bg-white/95 border-b border-slate-200 flex justify-between items-center px-6 z-10 backdrop-blur-md shadow-xs">
         {/* Navigation Links (Left Side) */}
-        <div className="flex items-center gap-lg h-full">
-          {/* Research (ACTIVE) */}
+        <div className="flex items-center gap-6 h-full">
           <Link
-            className="flex items-center h-full text-primary dark:text-primary font-bold border-b-2 border-primary pb-1 scale-95 transition-transform"
+            className="flex items-center h-full text-orange-600 font-bold border-b-2 border-orange-500 pb-0.5"
             href="/research"
           >
             <span className="font-body-sm text-body-sm">Research</span>
           </Link>
-          {/* Production (Inactive) */}
           <Link
-            className="flex items-center h-full text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary transition-opacity"
+            className="flex items-center h-full text-slate-500 hover:text-slate-900 transition-colors"
             href="#"
           >
-            <span className="font-body-sm text-body-sm">Production</span>
+            <span className="font-body-sm text-body-sm font-medium">Production</span>
           </Link>
         </div>
 
         {/* Actions & Profile (Right Side) */}
-        <div className="flex items-center gap-md">
-          {/* Secondary Action */}
-          <div className="hidden md:flex items-center gap-xs px-sm py-1 border border-outline-variant rounded-DEFAULT bg-surface">
-            <span className="w-2 h-2 rounded-full bg-secondary-fixed"></span>
-            <span className="text-data-metric-sm font-data-metric-sm text-on-surface-variant">
-              US Equities
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 border border-slate-200 rounded-lg bg-slate-50">
+            <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+            <span className="text-xs font-semibold text-slate-700 font-mono">
+              NSE Equities
             </span>
           </div>
-          {/* Primary Action */}
-          <div className="hidden md:flex items-center gap-xs px-sm py-1 border border-primary/30 rounded-DEFAULT bg-primary/10 text-primary">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-            <span className="text-data-metric-sm font-data-metric-sm">
-              System Active
-            </span>
+          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 border border-emerald-200 rounded-lg bg-emerald-50 text-emerald-700 font-semibold text-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span>System Active</span>
           </div>
-          <div className="w-px h-6 bg-outline-variant mx-sm"></div>
-          {/* Icon Actions */}
-          <button className="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center w-8 h-8 rounded hover:bg-surface-variant">
+          <div className="w-px h-6 bg-slate-200 mx-1"></div>
+          <button className="text-slate-400 hover:text-slate-700 transition-colors flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100">
             <span className="material-symbols-outlined text-[20px]">
               notifications
             </span>
           </button>
-          <button className="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center w-8 h-8 rounded hover:bg-surface-variant">
+          <button className="text-slate-400 hover:text-slate-700 transition-colors flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100">
             <span className="material-symbols-outlined text-[20px]">
               settings_input_component
             </span>
           </button>
-          {/* Profile Avatar */}
-          <div className="w-8 h-8 rounded-full bg-surface-variant border border-outline-variant overflow-hidden ml-sm cursor-pointer hover:border-primary transition-colors flex items-center justify-center">
-            <span className="material-symbols-outlined text-on-surface-variant text-[20px]">
-              person
-            </span>
+          <div className="w-8 h-8 rounded-full bg-orange-100 border border-orange-300 overflow-hidden cursor-pointer flex items-center justify-center text-orange-700 font-bold text-xs shadow-2xs">
+            QA
           </div>
         </div>
       </header>
 
       {/* Main Content Canvas */}
-      <main className="ml-60 mt-16 p-lg w-full max-w-[1600px] flex flex-col gap-xl">
+      <main className="ml-60 mt-16 p-6 w-full max-w-[1600px] flex flex-col gap-6">
         {/* Page Header & Global Actions */}
-        <div className="flex justify-between items-end border-b border-outline-variant/50 pb-sm">
+        <div className="flex justify-between items-end border-b border-slate-200 pb-4">
           <div>
-            <h2 className="text-headline-xl font-headline-xl text-on-surface mb-xs">
-              Alpha Generation pipeline
+            <h2 className="text-headline-xl font-headline-xl text-slate-900 mb-1 font-bold tracking-tight">
+              Alpha Generation Pipeline
             </h2>
-            <p className="text-body-sm font-body-sm text-on-surface-variant flex items-center gap-sm">
-              <span className="material-symbols-outlined text-[16px]">
+            <p className="text-body-sm font-body-sm text-slate-500 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px] text-slate-400">
                 folder_open
               </span>
-              Workspace: /research/active_candidate_pool/
+              Workspace: <code className="text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-200/50 font-mono text-xs">/research/active_candidate_pool/</code>
             </p>
           </div>
-          <button className="bg-primary text-on-primary hover:bg-primary-fixed transition-colors px-md py-sm rounded-DEFAULT flex items-center gap-xs shadow-sm font-body-sm text-body-sm font-medium">
+          <button className="bg-orange-600 text-white hover:bg-orange-700 transition-colors px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-2xs font-body-sm text-body-sm font-semibold">
             <span className="material-symbols-outlined text-[18px]">add_box</span>
             New Research Run
           </button>
         </div>
 
         {/* Candidate Signals Section */}
-        <section className="flex flex-col gap-md">
-          <div className="flex items-center gap-sm">
-            <h3 className="text-headline-md font-headline-md text-on-surface">
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-headline-md font-headline-md text-slate-900 font-semibold">
               Candidate Signals
             </h3>
-            <span className="px-2 py-0.5 bg-surface-variant text-on-surface-variant text-label-caps font-label-caps rounded">
+            <span className="px-2.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-600 text-[11px] font-semibold rounded-full">
               Queued for review
             </span>
           </div>
 
-          {/* Data Table Container (Level 2) */}
-          <div className="bg-surface-container border border-outline-variant rounded-lg overflow-x-auto">
+          {/* Data Table Container */}
+          <div className="bg-white border border-slate-200 rounded-lg overflow-x-auto shadow-xs">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-[#111827] border-b border-outline-variant">
+              <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="px-md py-sm text-label-caps font-label-caps text-on-surface-variant uppercase tracking-wider font-semibold">
+                  <th className="px-4 py-3 text-slate-600 font-label-caps uppercase tracking-wider font-semibold text-[11px]">
                     Signal Name / ID
                   </th>
-                  <th className="px-md py-sm text-label-caps font-label-caps text-on-surface-variant uppercase tracking-wider font-semibold">
+                  <th className="px-4 py-3 text-slate-600 font-label-caps uppercase tracking-wider font-semibold text-[11px]">
                     Category
                   </th>
-                  <th className="px-md py-sm text-label-caps font-label-caps text-on-surface-variant uppercase tracking-wider font-semibold text-right">
+                  <th className="px-4 py-3 text-slate-600 font-label-caps uppercase tracking-wider font-semibold text-[11px] text-right">
                     OOS Sharpe (Ann.)
                   </th>
-                  <th className="px-md py-sm text-label-caps font-label-caps text-on-surface-variant uppercase tracking-wider font-semibold text-right">
+                  <th className="px-4 py-3 text-slate-600 font-label-caps uppercase tracking-wider font-semibold text-[11px] text-right">
                     Max Drawdown
                   </th>
-                  <th className="px-md py-sm text-label-caps font-label-caps text-on-surface-variant uppercase tracking-wider font-semibold">
+                  <th className="px-4 py-3 text-slate-600 font-label-caps uppercase tracking-wider font-semibold text-[11px]">
                     Validation Status
                   </th>
-                  <th className="px-md py-sm text-label-caps font-label-caps text-on-surface-variant uppercase tracking-wider font-semibold text-right">
+                  <th className="px-4 py-3 text-slate-600 font-label-caps uppercase tracking-wider font-semibold text-[11px] text-right">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant/50">
+              <tbody className="divide-y divide-slate-100">
                 {/* Row 1 */}
-                <tr className="hover:bg-surface-variant/30 transition-colors group">
-                  <td className="px-md py-sm whitespace-nowrap">
-                    <div className="flex items-center gap-sm">
-                      <span className="material-symbols-outlined text-primary text-[18px]">
+                <tr className="hover:bg-slate-50/80 transition-colors group">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-orange-600 text-[18px]">
                         timeline
                       </span>
                       <div>
-                        <div className="text-body-sm font-body-sm text-on-surface font-medium">
+                        <div className="text-body-sm font-body-sm text-slate-900 font-semibold">
                           MOM_CROSS_V4
                         </div>
-                        <div className="text-data-metric-sm font-data-metric-sm text-on-surface-variant opacity-70">
+                        <div className="text-data-metric-sm font-data-metric-sm text-slate-400 font-mono text-xs">
                           sig_8f92a_b
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-md py-sm whitespace-nowrap">
-                    <span className="inline-flex items-center gap-xs px-2 py-1 rounded bg-secondary-container/20 border border-secondary-container/30 text-secondary text-xs">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium">
                       <span className="material-symbols-outlined text-[14px]">
                         show_chart
                       </span>{" "}
                       Technical
                     </span>
                   </td>
-                  <td className="px-md py-sm whitespace-nowrap text-right text-data-metric-sm font-data-metric-sm text-primary">
+                  <td className="px-4 py-3 whitespace-nowrap text-right text-data-metric-sm font-data-metric-sm font-mono text-orange-600 font-bold">
                     1.84
                   </td>
-                  <td className="px-md py-sm whitespace-nowrap text-right text-data-metric-sm font-data-metric-sm text-error">
+                  <td className="px-4 py-3 whitespace-nowrap text-right text-data-metric-sm font-data-metric-sm font-mono text-rose-600 font-semibold">
                     -12.4%
                   </td>
-                  <td className="px-md py-sm whitespace-nowrap">
-                    <div className="flex items-center gap-xs text-tertiary">
-                      <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
-                      <span className="text-body-sm font-body-sm text-xs">
-                        Backtest Running
-                      </span>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex items-center gap-1.5 text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full text-xs font-semibold w-fit">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                      <span>Backtest Running</span>
                     </div>
                   </td>
-                  <td className="px-md py-sm whitespace-nowrap text-right">
-                    <button className="h-7 px-3 bg-transparent border border-outline-variant text-on-surface-variant hover:text-on-surface hover:border-primary hover:bg-primary/5 rounded transition-colors text-xs font-medium">
+                  <td className="px-4 py-3 whitespace-nowrap text-right">
+                    <button className="h-7 px-3 bg-white border border-slate-300 text-slate-700 hover:text-orange-600 hover:border-orange-300 rounded-md transition-colors text-xs font-semibold shadow-2xs">
                       Review
                     </button>
                   </td>
                 </tr>
 
                 {/* Row 2 */}
-                <tr className="hover:bg-surface-variant/30 transition-colors group">
-                  <td className="px-md py-sm whitespace-nowrap">
-                    <div className="flex items-center gap-sm">
-                      <span className="material-symbols-outlined text-primary text-[18px]">
+                <tr className="hover:bg-slate-50/80 transition-colors group">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-orange-600 text-[18px]">
                         forum
                       </span>
                       <div>
-                        <div className="text-body-sm font-body-sm text-on-surface font-medium">
+                        <div className="text-body-sm font-body-sm text-slate-900 font-semibold">
                           SENT_NLP_AGG
                         </div>
-                        <div className="text-data-metric-sm font-data-metric-sm text-on-surface-variant opacity-70">
+                        <div className="text-data-metric-sm font-data-metric-sm text-slate-400 font-mono text-xs">
                           sig_3c11d_a
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-md py-sm whitespace-nowrap">
-                    <span className="inline-flex items-center gap-xs px-2 py-1 rounded bg-tertiary-container/10 border border-tertiary-container/30 text-tertiary text-xs">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-xs font-medium">
                       <span className="material-symbols-outlined text-[14px]">
                         psychology
                       </span>{" "}
                       Sentiment
                     </span>
                   </td>
-                  <td className="px-md py-sm whitespace-nowrap text-right text-data-metric-sm font-data-metric-sm text-primary">
+                  <td className="px-4 py-3 whitespace-nowrap text-right text-data-metric-sm font-data-metric-sm font-mono text-orange-600 font-bold">
                     2.15
                   </td>
-                  <td className="px-md py-sm whitespace-nowrap text-right text-data-metric-sm font-data-metric-sm text-on-surface">
+                  <td className="px-4 py-3 whitespace-nowrap text-right text-data-metric-sm font-data-metric-sm font-mono text-slate-700 font-semibold">
                     -8.2%
                   </td>
-                  <td className="px-md py-sm whitespace-nowrap">
-                    <div className="flex items-center gap-xs text-on-surface-variant">
-                      <span className="material-symbols-outlined text-[14px]">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex items-center gap-1.5 text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full text-xs font-medium w-fit">
+                      <span className="material-symbols-outlined text-[14px] text-slate-400">
                         pending
                       </span>
-                      <span className="text-body-sm font-body-sm text-xs">
-                        Awaiting Data
-                      </span>
+                      <span>Awaiting Data</span>
                     </div>
                   </td>
-                  <td className="px-md py-sm whitespace-nowrap text-right">
-                    <button className="h-7 px-3 bg-transparent border border-outline-variant text-on-surface-variant hover:text-on-surface hover:border-primary hover:bg-primary/5 rounded transition-colors text-xs font-medium">
+                  <td className="px-4 py-3 whitespace-nowrap text-right">
+                    <button className="h-7 px-3 bg-white border border-slate-300 text-slate-700 hover:text-orange-600 hover:border-orange-300 rounded-md transition-colors text-xs font-semibold shadow-2xs">
                       Review
                     </button>
                   </td>
@@ -360,86 +344,84 @@ export default function Research() {
         </section>
 
         {/* Validated Signals Section */}
-        <section className="flex flex-col gap-md">
-          <div className="flex items-center gap-sm">
-            <h3 className="text-headline-md font-headline-md text-on-surface">
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-headline-md font-headline-md text-slate-900 font-semibold">
               Validated Signals
             </h3>
-            <span className="px-2 py-0.5 bg-primary/10 border border-primary/20 text-primary text-label-caps font-label-caps rounded">
+            <span className="px-2.5 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-semibold rounded-full">
               Ready for ensemble
             </span>
           </div>
 
-          {/* Data Table Container (Level 2) */}
-          <div className="bg-surface-container border border-outline-variant rounded-lg overflow-x-auto">
+          {/* Data Table Container */}
+          <div className="bg-white border border-slate-200 rounded-lg overflow-x-auto shadow-xs">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-[#111827] border-b border-outline-variant">
+              <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="px-md py-sm text-label-caps font-label-caps text-on-surface-variant uppercase tracking-wider font-semibold">
+                  <th className="px-4 py-3 text-slate-600 font-label-caps uppercase tracking-wider font-semibold text-[11px]">
                     Signal Name / ID
                   </th>
-                  <th className="px-md py-sm text-label-caps font-label-caps text-on-surface-variant uppercase tracking-wider font-semibold">
+                  <th className="px-4 py-3 text-slate-600 font-label-caps uppercase tracking-wider font-semibold text-[11px]">
                     Category
                   </th>
-                  <th className="px-md py-sm text-label-caps font-label-caps text-on-surface-variant uppercase tracking-wider font-semibold text-right">
+                  <th className="px-4 py-3 text-slate-600 font-label-caps uppercase tracking-wider font-semibold text-[11px] text-right">
                     OOS Sharpe (Ann.)
                   </th>
-                  <th className="px-md py-sm text-label-caps font-label-caps text-on-surface-variant uppercase tracking-wider font-semibold text-right">
+                  <th className="px-4 py-3 text-slate-600 font-label-caps uppercase tracking-wider font-semibold text-[11px] text-right">
                     Max Drawdown
                   </th>
-                  <th className="px-md py-sm text-label-caps font-label-caps text-on-surface-variant uppercase tracking-wider font-semibold">
+                  <th className="px-4 py-3 text-slate-600 font-label-caps uppercase tracking-wider font-semibold text-[11px]">
                     Validation Status
                   </th>
-                  <th className="px-md py-sm text-label-caps font-label-caps text-on-surface-variant uppercase tracking-wider font-semibold text-right">
+                  <th className="px-4 py-3 text-slate-600 font-label-caps uppercase tracking-wider font-semibold text-[11px] text-right">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant/50">
+              <tbody className="divide-y divide-slate-100">
                 {/* Row 1 */}
-                <tr className="hover:bg-surface-variant/30 transition-colors group">
-                  <td className="px-md py-sm whitespace-nowrap">
-                    <div className="flex items-center gap-sm">
-                      <span className="material-symbols-outlined text-primary text-[18px]">
+                <tr className="hover:bg-slate-50/80 transition-colors group">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-orange-600 text-[18px]">
                         account_balance
                       </span>
                       <div>
-                        <div className="text-body-sm font-body-sm text-on-surface font-medium">
+                        <div className="text-body-sm font-body-sm text-slate-900 font-semibold">
                           MACRO_YIELD_CURVE
                         </div>
-                        <div className="text-data-metric-sm font-data-metric-sm text-on-surface-variant opacity-70">
+                        <div className="text-data-metric-sm font-data-metric-sm text-slate-400 font-mono text-xs">
                           val_9a22f_x
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-md py-sm whitespace-nowrap">
-                    <span className="inline-flex items-center gap-xs px-2 py-1 rounded bg-surface-variant border border-outline-variant text-on-surface-variant text-xs">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium">
                       <span className="material-symbols-outlined text-[14px]">
                         public
                       </span>{" "}
                       Macro
                     </span>
                   </td>
-                  <td className="px-md py-sm whitespace-nowrap text-right text-data-metric-sm font-data-metric-sm text-primary">
+                  <td className="px-4 py-3 whitespace-nowrap text-right text-data-metric-sm font-data-metric-sm font-mono text-orange-600 font-bold">
                     1.42
                   </td>
-                  <td className="px-md py-sm whitespace-nowrap text-right text-data-metric-sm font-data-metric-sm text-on-surface">
+                  <td className="px-4 py-3 whitespace-nowrap text-right text-data-metric-sm font-data-metric-sm font-mono text-slate-700 font-semibold">
                     -5.1%
                   </td>
-                  <td className="px-md py-sm whitespace-nowrap">
-                    <div className="flex items-center gap-xs text-[#4ade80]">
-                      <span className="material-symbols-outlined text-[16px]">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-semibold w-fit">
+                      <span className="material-symbols-outlined text-[14px] text-emerald-600">
                         check_circle
                       </span>
-                      <span className="text-body-sm font-body-sm text-xs text-on-surface">
-                        Passed Validation
-                      </span>
+                      <span>Passed Validation</span>
                     </div>
                   </td>
-                  <td className="px-md py-sm whitespace-nowrap text-right">
+                  <td className="px-4 py-3 whitespace-nowrap text-right">
                     <button
-                      className="h-7 px-3 bg-transparent border border-outline-variant text-on-surface-variant hover:text-on-surface hover:border-primary hover:bg-primary/5 rounded transition-colors text-xs font-medium"
+                      className="h-7 px-2.5 bg-white border border-slate-300 text-slate-600 hover:text-orange-600 hover:border-orange-300 rounded-md transition-colors text-xs font-semibold shadow-2xs flex items-center justify-center ml-auto"
                       title="View details"
                     >
                       <span className="material-symbols-outlined text-[16px]">
