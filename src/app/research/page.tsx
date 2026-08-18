@@ -20,11 +20,11 @@ export default function Research() {
     setIsValidating(true);
 
     const steps = [
-      "1/5: Generating triple-barrier labels from price history...",
-      "2/5: Purging overlapping label windows (eliminating lookahead bias)...",
-      "3/5: Applying dynamic embargo (τ = 1% of dataset)...",
-      "4/5: Generating Combinatorial Purged K-Fold paths (CPCV)...",
-      "5/5: Computing Deflated Sharpe Ratio (DSR) & PBO validation...",
+      "1/5: Preparing price history and market data...",
+      "2/5: Removing data overlap to prevent cheating...",
+      "3/5: Adding safety buffer between test periods...",
+      "4/5: Testing strategy through multiple scenarios...",
+      "5/5: Calculating reliability and overfitting risk...",
     ];
 
     for (let i = 0; i < steps.length; i++) {
@@ -41,7 +41,7 @@ export default function Research() {
         return;
       }
 
-      setValidationStep("Running real validation engine...");
+      setValidationStep("Testing strategy reliability...");
       
       const { runRealValidation } = await import("../../services/quantApi");
       const result = await runRealValidation(topCandidate.id, 5, 0.01, 50);
@@ -52,12 +52,12 @@ export default function Research() {
         setValidated((prev) => [graduatedSignal, ...prev]);
         setCandidates((prev) => prev.filter(s => s.id !== topCandidate.id));
         
-        setValidationStep(`✓ APPROVED: DSR=${result.validation_details.dsr.toFixed(2)}, PBO=${result.validation_details.pbo.toFixed(2)}`);
+        setValidationStep(`✓ APPROVED: Reliability=${result.validation_details.dsr.toFixed(2)}, Overfit Risk=${result.validation_details.pbo.toFixed(2)}`);
       } else {
         // Validation failed
-        setValidationStep(`✗ REJECTED: ${result.rejection_reasons.pbo_failed ? 'PBO failed' : ''} ${result.rejection_reasons.dsr_failed ? 'DSR failed' : ''}`);
+        setValidationStep(`✗ REJECTED: ${result.rejection_reasons.pbo_failed ? 'High overfit risk' : ''} ${result.rejection_reasons.dsr_failed ? 'Low reliability' : ''}`);
         setCandidates((prev) => prev.map(s => 
-          s.id === topCandidate.id ? { ...s, status: "FDR Rejected" as const } : s
+          s.id === topCandidate.id ? { ...s, status: "Failed Quality Check" as const } : s
         ));
       }
 
@@ -95,7 +95,7 @@ export default function Research() {
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-orange-600 text-2xl">menu_book</span>
                 <h3 className="font-headline-md text-lg font-bold text-stone-900">
-                  Statistical Validation Methodology
+                  How We Test Strategies
                 </h3>
               </div>
               <button 
@@ -111,13 +111,13 @@ export default function Research() {
               <div className="bg-[#f8f8f6] border border-[#e5e5df] p-3.5 rounded-lg space-y-1.5">
                 <h4 className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                  1. Purged K-Fold Cross-Validation &amp; Dynamic Embargo
+                  1. Smart Testing (No Cheating)
                 </h4>
                 <p className="text-stone-600">
-                  Standard cross-validation leaks lookahead information because financial labels span multiple bars. We purge training labels that overlap with test evaluation windows and apply a dynamic embargo period:
+                  Standard backtests "cheat" by accidentally using future information. We test strategies on separate time periods and add safety buffers to ensure fair testing. This means the results you see are realistic.
                 </p>
                 <code className="block font-mono bg-white p-2 border border-[#e5e5df] rounded text-[11px] text-stone-800">
-                  Embargo Window: t_train &gt; max(t_test_end) + tau_embargo (where tau = 5 trading days)
+                  Safety Buffer: We skip 5 trading days between test periods
                 </code>
               </div>
 
@@ -125,16 +125,16 @@ export default function Research() {
               <div className="bg-[#f8f8f6] border border-[#e5e5df] p-3.5 rounded-lg space-y-1.5">
                 <h4 className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  2. Deflated Sharpe Ratio (DSR) &amp; PBO
+                  2. Reliability Score & Overfitting Risk
                 </h4>
                 <p className="text-stone-600">
-                  Corrects standard Sharpe Ratio for multiple testing selection bias, non-normality (skewness &amp; kurtosis), and track record length (Bailey &amp; López de Prado):
+                  We calculate how confident we are that a strategy will work in real trading (Reliability Score) and the risk that it only worked by luck on past data (Overfitting Risk). Both are adjusted for the fact we tested many strategies.
                 </p>
                 <code className="block font-mono bg-white p-2 border border-[#e5e5df] rounded text-[11px] text-stone-800">
-                  DSR = Phi[ (SR - SR_0) * sqrt(T - 1) / sqrt(1 - gamma_3 * SR + ((gamma_4 - 1)/4) * SR^2) ]
+                  Good Strategy: Reliability &gt; 95% AND Overfit Risk &lt; 50%
                 </code>
                 <p className="text-stone-500 text-[11px]">
-                  Criteria: Signals require <strong>DSR &gt; 0.95</strong> and <strong>PBO &le; 0.50</strong> to graduate to production.
+                  Only strategies that pass <strong>both</strong> criteria get approved for real trading.
                 </p>
               </div>
 
@@ -142,10 +142,10 @@ export default function Research() {
               <div className="bg-[#f8f8f6] border border-[#e5e5df] p-3.5 rounded-lg space-y-1.5">
                 <h4 className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                  3. FinBERT NLP Sentiment Pipeline
+                  3. News Mood Analysis
                 </h4>
                 <p className="text-stone-600">
-                  Domain-specific FinBERT model trained on financial corpora parses news headlines and regulatory corporate disclosures from Indian exchanges (NSE/BSE), extracting continuous polarity vectors with decay weighting.
+                  We use AI to read financial news headlines and company announcements, measuring whether the overall mood is positive or negative. Recent news gets more weight than old news.
                 </p>
               </div>
             </div>
@@ -155,7 +155,7 @@ export default function Research() {
                 onClick={() => setShowMethodologyModal(false)}
                 className="px-4 py-1.5 bg-orange-600 text-white font-semibold text-xs rounded-lg hover:bg-orange-700 transition-colors cursor-pointer shadow-2xs"
               >
-                Close Reference
+                Got it!
               </button>
             </div>
           </div>
@@ -228,44 +228,44 @@ export default function Research() {
                 </div>
               </div>
 
-              {/* Performance Metrics */}
+              {/* Performance Metrics - Simplified */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="material-symbols-outlined text-stone-600 text-sm">analytics</span>
                   <span className="text-stone-600 font-bold uppercase tracking-wider text-xs">
-                    Performance Metrics
+                    Performance Scores
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg text-center">
-                    <span className="text-[10px] text-orange-700 font-bold uppercase block mb-1">OOS Sharpe</span>
+                    <span className="text-[10px] text-orange-700 font-bold uppercase block mb-1" title="Profit consistency (reward/risk)">Profit Score</span>
                     <span className="font-mono text-2xl font-bold text-orange-600">+{inspectingSignal.oosSharpe}</span>
                   </div>
                   <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-lg text-center">
-                    <span className="text-[10px] text-emerald-700 font-bold uppercase block mb-1">DSR Score</span>
+                    <span className="text-[10px] text-emerald-700 font-bold uppercase block mb-1" title="Confidence it will work (0-1)">Reliability</span>
                     <span className="font-mono text-2xl font-bold text-emerald-700">{inspectingSignal.dsr}</span>
                   </div>
                   <div className="bg-rose-50 border border-rose-200 p-4 rounded-lg text-center">
-                    <span className="text-[10px] text-rose-700 font-bold uppercase block mb-1">Max DD</span>
+                    <span className="text-[10px] text-rose-700 font-bold uppercase block mb-1" title="Worst peak-to-valley drop">Worst Loss</span>
                     <span className="font-mono text-2xl font-bold text-rose-700">{inspectingSignal.maxDrawdown}%</span>
                   </div>
                 </div>
               </div>
 
-              {/* Validation Details */}
+              {/* Validation Details - Simplified */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="material-symbols-outlined text-stone-600 text-sm">verified</span>
                   <span className="text-stone-600 font-bold uppercase tracking-wider text-xs">
-                    Validation Status
+                    Testing Status
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-[#f8f8f6] border border-[#e5e5df] p-3 rounded-lg">
-                    <span className="text-xs text-stone-500 font-semibold block mb-1">PBO (Overfitting Prob.)</span>
-                    <span className="font-mono text-lg font-bold text-stone-900">{inspectingSignal.pbo}</span>
+                    <span className="text-xs text-stone-500 font-semibold block mb-1" title="Probability strategy is overfit to past data">Overfitting Risk</span>
+                    <span className="font-mono text-lg font-bold text-stone-900">{(inspectingSignal.pbo * 100).toFixed(0)}%</span>
                     <span className={`ml-2 text-xs font-semibold ${inspectingSignal.pbo <= 0.5 ? "text-emerald-600" : "text-rose-600"}`}>
-                      {inspectingSignal.pbo <= 0.5 ? "✓ PASS" : "✗ FAIL"}
+                      {inspectingSignal.pbo <= 0.5 ? "✓ SAFE" : "✗ RISKY"}
                     </span>
                   </div>
                   <div className="bg-[#f8f8f6] border border-[#e5e5df] p-3 rounded-lg">
@@ -282,7 +282,10 @@ export default function Research() {
                         inspectingSignal.status === "FDR Rejected" ? "bg-rose-500" :
                         "bg-stone-400"
                       }`}></span>
-                      {inspectingSignal.status}
+                      {inspectingSignal.status === "Passed Validation" ? "Ready to Trade" :
+                       inspectingSignal.status === "Backtest Running" ? "Testing..." :
+                       inspectingSignal.status === "FDR Rejected" ? "Failed Test" :
+                       inspectingSignal.status}
                     </div>
                   </div>
                 </div>

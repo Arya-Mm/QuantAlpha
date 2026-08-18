@@ -73,12 +73,12 @@ export default function OverviewDashboard() {
     setIsRunningPipeline(true);
 
     const stages = [
-      "1/6: Ingesting NSE Tick & Orderbook Data...",
-      "2/6: Extracting Technical & FinBERT Alpha Features...",
-      "3/6: Executing Purged K-Fold Cross Validation...",
-      "4/6: Running Combinatorial Backtest & TCA Simulation...",
-      "5/6: Optimizing Mean-Variance & Kelly Portfolio Weights...",
-      "6/6: Compiling Executive Tearsheet Report...",
+      "1/6: Loading Market Data...",
+      "2/6: Analyzing Price Patterns & News Signals...",
+      "3/6: Testing Strategy Reliability...",
+      "4/6: Simulating Real Trading with Fees...",
+      "5/6: Balancing Risk & Reward...",
+      "6/6: Creating Performance Report...",
     ];
 
     try {
@@ -125,13 +125,13 @@ export default function OverviewDashboard() {
       // Show success with real results
       if (backtestResult?.validation) {
         setPipelineProgress(
-          `✓ Complete! Validation: ${backtestResult.validation.status} | ` +
-          `Sharpe: ${backtestResult.validation.sharpe_ratio} | ` +
-          `PBO: ${backtestResult.validation.pbo} | ` +
-          `DSR: ${backtestResult.validation.dsr}`
+          `✓ Complete! Status: ${backtestResult.validation.status} | ` +
+          `Profit Score: ${backtestResult.validation.sharpe_ratio} | ` +
+          `Overfit Risk: ${backtestResult.validation.pbo} | ` +
+          `Reliability: ${backtestResult.validation.dsr}`
         );
       } else {
-        setPipelineProgress("✓ Pipeline Complete (Backend offline - using fallback)");
+        setPipelineProgress("✓ Analysis Complete (Backend offline - showing demo)");
       }
 
       await new Promise((r) => setTimeout(r, 3000));
@@ -439,15 +439,15 @@ export default function OverviewDashboard() {
             </div>
           )}
 
-          {/* Pipeline Status Panels */}
+          {/* Pipeline Status Panels - Simplified */}
           <div className="flex gap-2 items-center overflow-x-auto pb-1">
             {[
-              { name: "DATA", detail: "12 datasets", icon: "check_circle", color: "text-emerald-600" },
-              { name: "FEATURES", detail: "48 features", icon: "check_circle", color: "text-emerald-600" },
-              { name: "VALIDATION", detail: "3 signals pending", icon: "warning", color: "text-amber-600", isWarn: true },
-              { name: "BACKTEST", detail: "12 strategies", icon: "check_circle", color: "text-emerald-600" },
-              { name: "PORTFOLIO", detail: "6 signals", icon: "check_circle", color: "text-emerald-600" },
-              { name: "REPORT", detail: "4 reports", icon: "check_circle", color: "text-emerald-600" },
+              { name: "DATA", detail: "12 datasets loaded", icon: "check_circle", color: "text-emerald-600" },
+              { name: "SIGNALS", detail: "48 opportunities", icon: "check_circle", color: "text-emerald-600" },
+              { name: "TESTING", detail: "3 strategies pending", icon: "warning", color: "text-amber-600", isWarn: true },
+              { name: "SIMULATION", detail: "12 backtests done", icon: "check_circle", color: "text-emerald-600" },
+              { name: "PORTFOLIO", detail: "6 active signals", icon: "check_circle", color: "text-emerald-600" },
+              { name: "REPORT", detail: "4 reports ready", icon: "check_circle", color: "text-emerald-600" },
             ].map((p, idx) => (
               <div key={p.name} className="flex items-center gap-2 flex-1 min-w-[180px]">
                 <div className={`card-panel p-4 w-full transition-all border ${
@@ -481,38 +481,38 @@ export default function OverviewDashboard() {
             ))}
           </div>
 
-          {/* Key Metrics Row */}
+          {/* Key Metrics Row - Simplified Language */}
           <div className="card-panel p-5 grid grid-cols-4 lg:grid-cols-8 gap-4 bg-white tracking-tight shadow-xs">
             <div className="text-center">
-              <div className="metric-label">Validated Signals</div>
+              <div className="metric-label">Approved Strategies</div>
               <div className="metric-value text-stone-900 tabular-nums">7 / 18</div>
             </div>
             <div className="text-center">
-              <div className="metric-label">Best OOS Sharpe</div>
+              <div className="metric-label" title="How consistently the strategy makes money">Profit Score</div>
               <div className="metric-value text-emerald-600 tabular-nums">{currentMetrics.sharpe}</div>
             </div>
             <div className="text-center">
-              <div className="metric-label">Deflated Sharpe</div>
+              <div className="metric-label" title="Confidence this will work in real trading (95%+)">Reliability</div>
               <div className="metric-value text-emerald-600 tabular-nums">{currentMetrics.dsr}</div>
             </div>
             <div className="text-center">
-              <div className="metric-label">PBO</div>
-              <div className="metric-value text-emerald-600 tabular-nums">0.12</div>
+              <div className="metric-label" title="Risk of overfitting (lower is better)">Overfit Risk</div>
+              <div className="metric-value text-emerald-600 tabular-nums">12%</div>
             </div>
             <div className="text-center">
-              <div className="metric-label">ICIR</div>
+              <div className="metric-label" title="Prediction accuracy">Signal Quality</div>
               <div className="metric-value text-emerald-600 tabular-nums">0.61</div>
             </div>
             <div className="text-center">
-              <div className="metric-label">Max Drawdown</div>
+              <div className="metric-label" title="Worst peak-to-valley drop">Biggest Loss</div>
               <div className="metric-value text-rose-600 tabular-nums">{currentMetrics.mdd}</div>
             </div>
             <div className="text-center">
-              <div className="metric-label">Ann. Return</div>
+              <div className="metric-label" title="Average profit per year">Yearly Profit</div>
               <div className="metric-value text-orange-600 tabular-nums">{currentMetrics.annReturn}</div>
             </div>
             <div className="text-center">
-              <div className="metric-label">Ann. Vol</div>
+              <div className="metric-label" title="How bumpy the ride is">Risk Level</div>
               <div className="metric-value text-stone-900 tabular-nums">{currentMetrics.annVol}</div>
             </div>
           </div>
