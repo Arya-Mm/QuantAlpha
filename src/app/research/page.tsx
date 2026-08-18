@@ -164,65 +164,149 @@ export default function Research() {
 
       {/* Signal Details Modal */}
       {inspectingSignal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white border border-[#e5e5df] rounded-xl max-w-lg w-full p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#e5e5df] pb-3">
-              <div>
-                <h3 className="font-headline-md text-lg font-bold text-stone-900">
-                  {inspectingSignal.name}
-                </h3>
-                <span className="text-xs font-mono text-stone-500">{inspectingSignal.code}</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white border border-[#e5e5df] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-white border-b border-[#e5e5df] p-6 z-10">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="material-symbols-outlined text-orange-600 text-2xl">
+                      {inspectingSignal.category === "Sentiment" ? "forum" : 
+                       inspectingSignal.category === "Statistical Arbitrage" ? "tune" : "timeline"}
+                    </span>
+                    <div>
+                      <h3 className="font-headline-md text-xl font-bold text-stone-900">
+                        {inspectingSignal.name}
+                      </h3>
+                      <span className="text-xs font-mono text-stone-500">{inspectingSignal.code}</span>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${
+                    inspectingSignal.category === "Sentiment" ? "bg-purple-50 border-purple-200 text-purple-700" :
+                    inspectingSignal.category === "Statistical Arbitrage" ? "bg-amber-50 border-amber-200 text-amber-800" :
+                    inspectingSignal.category === "Macro" ? "bg-blue-50 border-blue-200 text-blue-700" :
+                    "bg-emerald-50 border-emerald-200 text-emerald-700"
+                  }`}>
+                    {inspectingSignal.category}
+                  </span>
+                </div>
+                <button 
+                  onClick={() => setInspectingSignal(null)}
+                  className="text-stone-400 hover:text-stone-700 cursor-pointer ml-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100"
+                >
+                  <span className="material-symbols-outlined text-xl">close</span>
+                </button>
               </div>
-              <button 
-                onClick={() => setInspectingSignal(null)}
-                className="text-stone-400 hover:text-stone-700 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-xl">close</span>
-              </button>
             </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="p-6 space-y-6">
+              {/* Description */}
               <div>
-                <span className="text-stone-500 font-bold uppercase tracking-wider text-[10px] block mb-1">
-                  Description
-                </span>
-                <p className="text-stone-700 bg-[#f8f8f6] p-2.5 rounded-lg border border-[#e5e5df]">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="material-symbols-outlined text-stone-600 text-sm">description</span>
+                  <span className="text-stone-600 font-bold uppercase tracking-wider text-xs">
+                    Signal Description
+                  </span>
+                </div>
+                <p className="text-stone-700 bg-[#f8f8f6] p-4 rounded-lg border border-[#e5e5df] leading-relaxed">
                   {inspectingSignal.description}
                 </p>
               </div>
 
+              {/* Formula */}
               <div>
-                <span className="text-stone-500 font-bold uppercase tracking-wider text-[10px] block mb-1">
-                  Signal Specification Formula
-                </span>
-                <code className="block font-mono bg-[#eeeeea] p-2.5 rounded-lg border border-[#e5e5df] text-stone-900 text-[11px] overflow-x-auto">
-                  {inspectingSignal.formula}
-                </code>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="material-symbols-outlined text-stone-600 text-sm">functions</span>
+                  <span className="text-stone-600 font-bold uppercase tracking-wider text-xs">
+                    Mathematical Formula
+                  </span>
+                </div>
+                <div className="bg-stone-900 p-4 rounded-lg border border-stone-700 overflow-x-auto">
+                  <code className="text-emerald-400 font-mono text-sm whitespace-pre-wrap break-all">
+                    {inspectingSignal.formula}
+                  </code>
+                </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 pt-1">
-                <div className="bg-[#f8f8f6] border border-[#e5e5df] p-2 rounded-lg text-center">
-                  <span className="text-[10px] text-stone-500 font-bold uppercase block">OOS Sharpe</span>
-                  <span className="font-mono text-base font-bold text-orange-600">+{inspectingSignal.oosSharpe}</span>
+              {/* Performance Metrics */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="material-symbols-outlined text-stone-600 text-sm">analytics</span>
+                  <span className="text-stone-600 font-bold uppercase tracking-wider text-xs">
+                    Performance Metrics
+                  </span>
                 </div>
-                <div className="bg-[#f8f8f6] border border-[#e5e5df] p-2 rounded-lg text-center">
-                  <span className="text-[10px] text-stone-500 font-bold uppercase block">DSR Confidence</span>
-                  <span className="font-mono text-base font-bold text-emerald-700">{inspectingSignal.dsr}</span>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg text-center">
+                    <span className="text-[10px] text-orange-700 font-bold uppercase block mb-1">OOS Sharpe</span>
+                    <span className="font-mono text-2xl font-bold text-orange-600">+{inspectingSignal.oosSharpe}</span>
+                  </div>
+                  <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-lg text-center">
+                    <span className="text-[10px] text-emerald-700 font-bold uppercase block mb-1">DSR Score</span>
+                    <span className="font-mono text-2xl font-bold text-emerald-700">{inspectingSignal.dsr}</span>
+                  </div>
+                  <div className="bg-rose-50 border border-rose-200 p-4 rounded-lg text-center">
+                    <span className="text-[10px] text-rose-700 font-bold uppercase block mb-1">Max DD</span>
+                    <span className="font-mono text-2xl font-bold text-rose-700">{inspectingSignal.maxDrawdown}%</span>
+                  </div>
                 </div>
-                <div className="bg-[#f8f8f6] border border-[#e5e5df] p-2 rounded-lg text-center">
-                  <span className="text-[10px] text-stone-500 font-bold uppercase block">Max DD</span>
-                  <span className="font-mono text-base font-bold text-rose-800">{inspectingSignal.maxDrawdown}%</span>
+              </div>
+
+              {/* Validation Details */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="material-symbols-outlined text-stone-600 text-sm">verified</span>
+                  <span className="text-stone-600 font-bold uppercase tracking-wider text-xs">
+                    Validation Status
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[#f8f8f6] border border-[#e5e5df] p-3 rounded-lg">
+                    <span className="text-xs text-stone-500 font-semibold block mb-1">PBO (Overfitting Prob.)</span>
+                    <span className="font-mono text-lg font-bold text-stone-900">{inspectingSignal.pbo}</span>
+                    <span className={`ml-2 text-xs font-semibold ${inspectingSignal.pbo <= 0.5 ? "text-emerald-600" : "text-rose-600"}`}>
+                      {inspectingSignal.pbo <= 0.5 ? "✓ PASS" : "✗ FAIL"}
+                    </span>
+                  </div>
+                  <div className="bg-[#f8f8f6] border border-[#e5e5df] p-3 rounded-lg">
+                    <span className="text-xs text-stone-500 font-semibold block mb-1">Current Status</span>
+                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                      inspectingSignal.status === "Passed Validation" ? "text-emerald-800 bg-emerald-50 border-emerald-200" :
+                      inspectingSignal.status === "Backtest Running" ? "text-amber-800 bg-amber-50 border-amber-200" :
+                      inspectingSignal.status === "FDR Rejected" ? "text-rose-800 bg-rose-50 border-rose-200" :
+                      "text-stone-600 bg-stone-50 border-stone-200"
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        inspectingSignal.status === "Passed Validation" ? "bg-emerald-500" :
+                        inspectingSignal.status === "Backtest Running" ? "bg-amber-500 animate-pulse" :
+                        inspectingSignal.status === "FDR Rejected" ? "bg-rose-500" :
+                        "bg-stone-400"
+                      }`}></span>
+                      {inspectingSignal.status}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-[#e5e5df]">
+            <div className="sticky bottom-0 bg-stone-50 border-t border-[#e5e5df] p-4 flex justify-end gap-3">
               <button
                 onClick={() => setInspectingSignal(null)}
-                className="px-4 py-1.5 bg-[#eeeeea] hover:bg-[#e4e4dd] text-stone-700 font-semibold text-xs rounded-lg transition-colors cursor-pointer"
+                className="px-4 py-2 bg-white hover:bg-stone-100 text-stone-700 font-semibold text-sm rounded-lg transition-colors cursor-pointer border border-stone-300"
               >
                 Close
               </button>
+              {inspectingSignal.status !== "Passed Validation" && (
+                <button
+                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm rounded-lg transition-colors cursor-pointer shadow-sm"
+                  onClick={() => {
+                    setInspectingSignal(null);
+                    // Trigger validation for this signal
+                  }}
+                >
+                  Run Validation
+                </button>
+              )}
             </div>
           </div>
         </div>

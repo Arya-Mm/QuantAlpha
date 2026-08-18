@@ -173,7 +173,15 @@ class ValidationEngine:
             test_times_combined = self.labels.loc[test_indices]
             train_indices = self.get_train_times(test_times_combined)
             
+            # Only use indices that exist in returns (important!)
+            train_indices = train_indices.intersection(self.returns.index)
+            test_indices = test_indices.intersection(self.returns.index)
+            
             # Calculate performance metrics
+            if len(train_indices) == 0 or len(test_indices) == 0:
+                logger.warning(f"Path {combo_idx}: insufficient data after purging")
+                continue
+                
             train_returns = self.returns.loc[train_indices]
             test_returns = self.returns.loc[test_indices]
             

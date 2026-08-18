@@ -5,6 +5,7 @@ Real-Time Market Ingestion, Quantitative Analytics, & Autonomous Agent Gateway f
 
 import asyncio
 import json
+import logging
 from datetime import datetime
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException
@@ -17,6 +18,10 @@ from math_engine import deflated_sharpe_ratio
 from market_stream import fetch_live_quotes, get_live_portfolio_state
 from validation_engine import validate_strategy_pipeline, ValidationEngine
 from triple_barrier import TripleBarrierLabeler
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="QuantAlpha Real-Time Quantitative Engine",
@@ -339,13 +344,21 @@ def run_real_backtest(req: RealBacktestRequest):
         labels = labeler.generate_labels()
         label_stats = labeler.get_label_statistics(labels)
         
-        # Generate strategy returns based on labels
-        strategy_returns = pd.Series(0.0, index=prices.index)
+        # Generate strategy returns based on labels - align indices properly
+        strategy_returns = pd.Series(0.0, index=labels.index)
         for idx, row in labels.iterrows():
-            if idx in strategy_returns.index:
-                strategy_returns.loc[idx] = row["return"]
+            strategy_returns.loc[idx] = row["return"]
         
+        # Remove zero returns and ensure we have data
         strategy_returns = strategy_returns[strategy_returns != 0]
+        
+        if len(strategy_returns) < 50:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Insufficient data: only {len(strategy_returns)} valid returns generated"
+            )
+        
+        logger.info(f"Generated {len(strategy_returns)} strategy returns for validation")
         
         # Run validation
         validation_result = validate_strategy_pipeline(
@@ -354,7 +367,7 @@ def run_real_backtest(req: RealBacktestRequest):
             n_trials=50,
             alpha=0.05,
             embargo_pct=0.01,
-            n_splits=5
+            n_splits=min(5, len(strategy_returns) // 20)  # Ensure enough samples per fold
         )
         
         return {
