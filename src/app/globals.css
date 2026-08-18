@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+@theme {
+  --color-on-primary: #00354a;
+  --color-on-primary-fixed-variant: #004c69;
+  --color-surface-tint: #7bd0ff;
+  --color-surface-container: #1b2024;
+  --color-on-secondary: #233143;
+  --color-primary-fixed: #c4e7ff;
+  --color-surface: #0f1418;
+  --color-outline: #87929a;
+  --color-surface-dim: #0f1418;
+  --color-inverse-on-surface: #2c3135;
+  --color-error-container: #93000a;
+  --color-tertiary: #ffc176;
+  --color-on-surface: #dee3e8;
+  --color-tertiary-fixed-dim: #ffb960;
+  --color-on-tertiary: #472a00;
+  --color-on-primary-container: #004965;
+  --color-inverse-primary: #00668a;
+  --color-on-tertiary-fixed-variant: #653e00;
+  --color-tertiary-container: #f1a02b;
+  --color-surface-variant: #303539;
+  --color-tertiary-fixed: #ffddb8;
+  --color-surface-container-highest: #303539;
+  --color-outline-variant: #3e484f;
+  --color-on-error-container: #ffdad6;
+  --color-on-error: #690005;
+  --color-on-tertiary-fixed: #2a1700;
+  --color-on-surface-variant: #bdc8d1;
+  --color-surface-container-low: #171c20;
+  --color-primary: #8ed5ff;
+  --color-surface-container-high: #252b2e;
+  --color-primary-fixed-dim: #7bd0ff;
+  --color-background: #0f1418;
+  --color-on-secondary-fixed-variant: #39485a;
+  --color-on-primary-fixed: #001e2c;
+  --color-surface-container-lowest: #0a0f12;
+  --color-secondary-fixed: #d4e4fa;
+  --color-inverse-surface: #dee3e8;
+  --color-on-background: #dee3e8;
+  --color-secondary-container: #39485a;
+  --color-error: #ffb4ab;
+  --color-primary-container: #38bdf8;
+  --color-on-secondary-container: #a7b6cc;
+  --color-on-tertiary-container: #613b00;
+  --color-secondary-fixed-dim: #b9c8de;
+  --color-secondary: #b9c8de;
+  --color-on-secondary-fixed: #0d1c2d;
+  --color-surface-bright: #343a3e;
+
+  --radius-DEFAULT: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-full: 9999px;
+
+  --spacing-xs: 8px;
+  --spacing-gutter: 16px;
+  --spacing-xl: 32px;
+  --spacing-base: 4px;
+  --spacing-margin-page: 24px;
+  --spacing-md: 16px;
+  --spacing-sm: 12px;
+  --spacing-lg: 24px;
+
+  --font-headline-md: 'Inter', sans-serif;
+  --font-data-metric-lg: 'JetBrains Mono', monospace;
+  --font-body-lg: 'Inter', sans-serif;
+  --font-headline-xl: 'Inter', sans-serif;
+  --font-body-sm: 'Inter', sans-serif;
+  --font-data-metric-sm: 'JetBrains Mono', monospace;
+  --font-label-caps: 'Inter', sans-serif;
+
+  --text-headline-md: 18px;
+  --text-headline-md--line-height: 24px;
+  --text-headline-md--font-weight: 600;
+
+  --text-data-metric-lg: 20px;
+  --text-data-metric-lg--line-height: 24px;
+  --text-data-metric-lg--font-weight: 500;
+
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 24px;
+  --text-body-lg--font-weight: 400;
+
+  --text-headline-xl: 24px;
+  --text-headline-xl--line-height: 32px;
+  --text-headline-xl--letter-spacing: -0.02em;
+  --text-headline-xl--font-weight: 600;
+
+  --text-body-sm: 14px;
+  --text-body-sm--line-height: 20px;
+  --text-body-sm--font-weight: 400;
+
+  --text-data-metric-sm: 14px;
+  --text-data-metric-sm--line-height: 18px;
+  --text-data-metric-sm--font-weight: 500;
+
+  --text-label-caps: 11px;
+  --text-label-caps--line-height: 16px;
+  --text-label-caps--letter-spacing: 0.05em;
+  --text-label-caps--font-weight: 700;
+}
+
+@layer components {
+  .table-header {
+    @apply text-on-surface-variant font-label-caps text-label-caps uppercase tracking-wider bg-surface-container-low px-4 py-2 border-b border-outline-variant text-left;
+  }
+  .table-cell {
+    @apply px-4 py-3 border-b border-outline-variant font-body-sm text-body-sm;
+  }
+  .metric-value {
+    @apply font-data-metric-lg text-data-metric-lg text-primary;
+  }
+  .metric-value-sm {
+    @apply font-data-metric-sm text-data-metric-sm text-primary;
+  }
+  .metric-label {
+    @apply font-body-sm text-body-sm text-on-surface-variant mb-1;
+  }
+  .card-panel {
+    @apply bg-[#1B2735] border border-outline-variant rounded-lg overflow-hidden;
+  }
+  .status-badge-pass {
+    @apply bg-green-500/10 text-green-400 px-2 py-0.5 rounded text-[11px] font-bold tracking-wide;
+  }
+  .status-badge-warn {
+    @apply bg-yellow-500/10 text-yellow-400 px-2 py-0.5 rounded text-[11px] font-bold tracking-wide;
+  }
+  .status-badge-fail {
+    @apply bg-red-500/10 text-red-400 px-2 py-0.5 rounded text-[11px] font-bold tracking-wide;
+  }
+}
+
+body {
+  background-color: var(--color-background, #0f1418);
+  color: var(--color-on-background, #dee3e8);
+  font-family: 'Inter', sans-serif;
+}
