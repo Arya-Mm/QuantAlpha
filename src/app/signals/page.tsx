@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { FactorItem, FactorQuality, EvolutionPhase, FactorLibraryStats } from "../../types/quant";
+import { useLiveMarket } from "../../hooks/useLiveMarket";
 
 const DEFAULT_STATS: FactorLibraryStats = {
   total_factors: 7,
@@ -214,6 +215,7 @@ interface LogLine {
 }
 
 export default function SignalsPage() {
+  const liveMarket = useLiveMarket();
   const [factors, setFactors] = useState<FactorItem[]>(INITIAL_FACTORS);
   const [stats, setStats] = useState<FactorLibraryStats>(DEFAULT_STATS);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
@@ -473,45 +475,95 @@ export default function SignalsPage() {
       </nav>
 
       {/* TopAppBar */}
-      <header className="fixed top-0 right-0 h-16 w-[calc(100%-240px)] bg-white/95 border-b border-[#e5e5df] flex justify-between items-center px-6 z-10 backdrop-blur-md shadow-xs">
-        <div className="flex items-center gap-4">
+      <header className="fixed top-0 right-0 h-16 w-[calc(100%-240px)] bg-white/90 border-b border-[#e5e5df] flex justify-between items-center px-6 z-20 backdrop-blur-md shadow-2xs">
+        {/* Left Section: Breadcrumb & Title */}
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-orange-600">psychology</span>
-            <span className="font-headline-md font-bold text-stone-900 text-sm">
-              LLM-Driven Factor Store & Evolutionary Mining
-            </span>
+            <div className="w-8 h-8 rounded-lg bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600 shadow-2xs">
+              <span className="material-symbols-outlined text-lg">psychology</span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-headline-md font-bold text-stone-900 text-sm tracking-tight">
+                  Factor Store & Mining
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  {factors.length} Alphas
+                </span>
+              </div>
+              <span className="text-[10px] text-stone-400 font-medium">
+                QuantaAlpha Autonomous Mining Studio (arXiv:2602.07085)
+              </span>
+            </div>
           </div>
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            {factors.length} Active Alphas
-          </span>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Center Section: Live Streaming Market Ticker Ribbon */}
+        <div className="hidden xl:flex items-center gap-2 bg-[#f8f8f6] px-3 py-1.5 rounded-xl border border-[#e5e5df] shadow-2xs">
+          <span className="text-[9px] font-mono font-bold text-stone-400 uppercase tracking-widest border-r border-[#e5e5df] pr-2">
+            NSE Live
+          </span>
+          {Object.values(liveMarket.quotes).slice(0, 3).map((q) => {
+            const dir = liveMarket.tickDirection?.[q.symbol] ?? "flat";
+            return (
+              <div key={q.symbol} className="flex items-center gap-1.5 text-xs px-1">
+                <span className="font-semibold text-stone-700 text-[10px]">{q.symbol.split(" ")[0]}</span>
+                <span
+                  className={`font-mono font-bold text-[11px] transition-colors duration-300 ${
+                    dir === "up" ? "text-emerald-700" : dir === "down" ? "text-rose-700" : "text-stone-900"
+                  }`}
+                >
+                  ₹{q.price.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                </span>
+                <span className={`font-mono text-[9px] font-bold px-1 py-0.5 rounded ${q.change >= 0 ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50"}`}>
+                  {q.change >= 0 ? "+" : ""}{q.changePct.toFixed(1)}%
+                </span>
+                {dir !== "flat" && (
+                  <span className={`text-[8px] font-bold ${dir === "up" ? "text-emerald-600" : "text-rose-600"}`}>
+                    {dir === "up" ? "▲" : "▼"}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Right Section: Action Controls */}
+        <div className="flex items-center gap-2.5">
           <button
             onClick={handleRecompute}
             disabled={isRecomputing}
-            className={`px-3 py-1.5 border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${isRecomputing ? "opacity-75 cursor-not-allowed" : "active:scale-95"}`}
+            className={`px-3 py-1.5 border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${isRecomputing ? "opacity-75 cursor-not-allowed" : "active:scale-95 hover:shadow-xs"}`}
             title="Fetches real historical price series from Yahoo Finance and executes factor vectorized formulas"
           >
-            <span className={`material-symbols-outlined text-sm ${isRecomputing ? "animate-spin" : ""}`}>
+            <span className={`material-symbols-outlined text-sm text-emerald-700 ${isRecomputing ? "animate-spin" : ""}`}>
               {isRecomputing ? "refresh" : "sync"}
             </span>
-            {isRecomputing ? "Computing..." : "Recompute on Live Data"}
+            <span>{isRecomputing ? "Computing..." : "Recompute Live Data"}</span>
           </button>
+
           <button
             onClick={handleExportJSON}
-            className="px-3 py-1.5 border border-[#d6d3d1] bg-white text-stone-700 hover:bg-[#eeeeea] text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+            className="px-3 py-1.5 border border-[#d6d3d1] bg-white text-stone-700 hover:bg-[#eeeeea] text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs hover:border-stone-400"
           >
-            <span className="material-symbols-outlined text-sm">download</span>
-            Export Factor Library
+            <span className="material-symbols-outlined text-sm text-stone-500">download</span>
+            <span>Export Library</span>
           </button>
+
           <button
             onClick={() => setShowMiningStudio(true)}
-            className="px-4 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs active:scale-95"
+            className="px-3.5 py-1.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shadow-xs hover:shadow-md active:scale-95"
           >
             <span className="material-symbols-outlined text-sm">auto_awesome</span>
-            Mine New Factors
+            <span>Mine Factors</span>
           </button>
+
+          <div className="w-px h-6 bg-[#e5e5df] mx-0.5"></div>
+
+          <div className="w-8 h-8 rounded-full bg-orange-100 border border-orange-300 flex items-center justify-center text-orange-700 font-bold text-xs shadow-2xs" title="Quant Alpha Terminal Node">
+            QA
+          </div>
         </div>
       </header>
 

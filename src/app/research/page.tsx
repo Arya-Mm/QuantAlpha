@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { SignalItem, SignalCategory } from "../../types/quant";
 import { INITIAL_CANDIDATE_SIGNALS, INITIAL_VALIDATED_SIGNALS } from "../../services/quantApi";
+import { useLiveMarket } from "../../hooks/useLiveMarket";
 
 interface DiscoveryLogLine {
   id: number;
@@ -13,6 +14,7 @@ interface DiscoveryLogLine {
 }
 
 export default function Research() {
+  const liveMarket = useLiveMarket();
   const [candidates, setCandidates] = useState<SignalItem[]>(INITIAL_CANDIDATE_SIGNALS);
   const [validated, setValidated] = useState<SignalItem[]>(INITIAL_VALIDATED_SIGNALS);
   const [searchQuery, setSearchQuery] = useState("");
@@ -553,46 +555,73 @@ export default function Research() {
       </nav>
 
       {/* TopAppBar */}
-      <header className="fixed top-0 right-0 h-16 w-[calc(100%-240px)] bg-white/95 border-b border-[#e5e5df] flex justify-between items-center px-6 z-10 backdrop-blur-md shadow-xs">
-        <div className="flex items-center gap-6 h-full">
-          <Link
-            className="flex items-center h-full text-orange-600 font-bold border-b-2 border-orange-500 pb-0.5"
-            href="/research"
-          >
-            <span className="font-body-sm text-body-sm">Research</span>
-          </Link>
-          <button 
-            onClick={() => setShowMethodologyModal(true)}
-            className="flex items-center gap-1.5 h-full text-stone-500 hover:text-orange-600 transition-colors font-medium cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[18px]">menu_book</span>
-            <span className="font-body-sm text-body-sm">Statistical Methodology</span>
-          </button>
+      <header className="fixed top-0 right-0 h-16 w-[calc(100%-240px)] bg-white/90 border-b border-[#e5e5df] flex justify-between items-center px-6 z-20 backdrop-blur-md shadow-2xs">
+        {/* Left Section: Breadcrumb & Title */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600 shadow-2xs">
+              <span className="material-symbols-outlined text-lg">science</span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-headline-md font-bold text-stone-900 text-sm tracking-tight">
+                  Alpha Research & Validation Lab
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Purged CPCV Active
+                </span>
+              </div>
+              <span className="text-[10px] text-stone-400 font-medium">
+                Deflated Sharpe Ratio (DSR) & PBO Statistical Guardrails
+              </span>
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 border border-[#e5e5df] rounded-lg bg-[#f8f8f6]">
-            <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-            <span className="text-xs font-semibold text-stone-700 font-mono">
-              NSE Equities
-            </span>
-          </div>
-          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 border border-emerald-200 rounded-lg bg-emerald-50 text-emerald-800 font-semibold text-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            <span>System Active</span>
-          </div>
-          <div className="w-px h-6 bg-[#e5e5df] mx-1"></div>
-          <button className="text-stone-400 hover:text-stone-700 transition-colors flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[#eeeeea]">
-            <span className="material-symbols-outlined text-[20px]">
-              notifications
-            </span>
+        {/* Center Section: Live Streaming Market Ticker Ribbon */}
+        <div className="hidden xl:flex items-center gap-2 bg-[#f8f8f6] px-3 py-1.5 rounded-xl border border-[#e5e5df] shadow-2xs">
+          <span className="text-[9px] font-mono font-bold text-stone-400 uppercase tracking-widest border-r border-[#e5e5df] pr-2">
+            NSE Live
+          </span>
+          {Object.values(liveMarket.quotes).slice(0, 3).map((q) => {
+            const dir = liveMarket.tickDirection?.[q.symbol] ?? "flat";
+            return (
+              <div key={q.symbol} className="flex items-center gap-1.5 text-xs px-1">
+                <span className="font-semibold text-stone-700 text-[10px]">{q.symbol.split(" ")[0]}</span>
+                <span
+                  className={`font-mono font-bold text-[11px] transition-colors duration-300 ${
+                    dir === "up" ? "text-emerald-700" : dir === "down" ? "text-rose-700" : "text-stone-900"
+                  }`}
+                >
+                  ₹{q.price.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                </span>
+                <span className={`font-mono text-[9px] font-bold px-1 py-0.5 rounded ${q.change >= 0 ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50"}`}>
+                  {q.change >= 0 ? "+" : ""}{q.changePct.toFixed(1)}%
+                </span>
+                {dir !== "flat" && (
+                  <span className={`text-[8px] font-bold ${dir === "up" ? "text-emerald-600" : "text-rose-600"}`}>
+                    {dir === "up" ? "▲" : "▼"}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Right Section: Action Controls */}
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setShowMethodologyModal(true)}
+            className="px-3 py-1.5 border border-[#d6d3d1] bg-white text-stone-700 hover:bg-[#eeeeea] text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs hover:border-stone-400"
+          >
+            <span className="material-symbols-outlined text-sm text-stone-500">menu_book</span>
+            <span>Methodology</span>
           </button>
-          <button className="text-stone-400 hover:text-stone-700 transition-colors flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[#eeeeea]">
-            <span className="material-symbols-outlined text-[20px]">
-              settings_input_component
-            </span>
-          </button>
-          <div className="w-8 h-8 rounded-full bg-orange-100 border border-orange-300 flex items-center justify-center text-orange-700 font-bold text-xs shadow-2xs">
+
+          <div className="w-px h-6 bg-[#e5e5df] mx-0.5"></div>
+
+          <div className="w-8 h-8 rounded-full bg-orange-100 border border-orange-300 flex items-center justify-center text-orange-700 font-bold text-xs shadow-2xs" title="Quant Alpha Terminal Node">
             QA
           </div>
         </div>

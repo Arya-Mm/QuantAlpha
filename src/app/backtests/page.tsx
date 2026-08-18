@@ -15,8 +15,10 @@ import {
   runBacktestSimulation, 
   exportBacktestCSV 
 } from "../../services/quantApi";
+import { useLiveMarket } from "../../hooks/useLiveMarket";
 
 export default function Backtests() {
+  const liveMarket = useLiveMarket();
   const [config, setConfig] = useState<BacktestConfig>(DEFAULT_BACKTEST_CONFIG);
   const [result, setResult] = useState<BacktestResult>(INITIAL_BACKTEST_RESULT);
   const [isRunning, setIsRunning] = useState(false);
@@ -339,51 +341,72 @@ export default function Backtests() {
       </nav>
 
       {/* TopAppBar */}
-      <header className="bg-white/95 text-stone-900 fixed top-0 right-0 h-16 w-[calc(100%-240px)] border-b border-[#e5e5df] flex justify-between items-center px-6 z-10 shadow-xs backdrop-blur-md">
-        {/* Search & Context */}
-        <div className="flex items-center flex-1 gap-6">
-          <div className="relative w-80 hidden md:block">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm">
-              search
-            </span>
-            <input
-              className="w-full bg-[#f8f8f6] text-stone-900 text-body-sm rounded-lg border border-[#e5e5df] pl-9 pr-3 py-1.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 placeholder:text-stone-400"
-              placeholder="Search parameters, models, symbols..."
-              type="text"
-            />
+      <header className="bg-white/90 text-stone-900 fixed top-0 right-0 h-16 w-[calc(100%-240px)] border-b border-[#e5e5df] flex justify-between items-center px-6 z-20 shadow-2xs backdrop-blur-md">
+        {/* Left Section: Breadcrumb & Title */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600 shadow-2xs">
+              <span className="material-symbols-outlined text-lg">history</span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-headline-md font-bold text-stone-900 text-sm tracking-tight">
+                  High-Fidelity Backtest Engine
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Purged CPCV Ready
+                </span>
+              </div>
+              <span className="text-[10px] text-stone-400 font-medium">
+                Marcos López de Prado Financial Machine Learning Architecture
+              </span>
+            </div>
           </div>
-          {/* Breadcrumb */}
-          <nav className="flex items-center space-x-2 text-xs font-medium">
-            <Link className="text-stone-500 hover:text-stone-900" href="/">
-              Research
-            </Link>
-            <span className="text-stone-300">/</span>
-            <span className="text-orange-600 font-semibold">Backtest Engine</span>
-          </nav>
         </div>
 
-        {/* Trailing Actions */}
-        <div className="flex items-center gap-4">
-          <div className="flex gap-2">
-            <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              System Active
-            </span>
-            <span className="px-2.5 py-1 rounded-lg bg-[#eeeeea] text-stone-700 text-xs font-semibold border border-[#e5e5df] font-mono">
-              NSE Equities
-            </span>
+        {/* Center Section: Live Streaming Market Ticker Ribbon */}
+        <div className="hidden xl:flex items-center gap-2 bg-[#f8f8f6] px-3 py-1.5 rounded-xl border border-[#e5e5df] shadow-2xs">
+          <span className="text-[9px] font-mono font-bold text-stone-400 uppercase tracking-widest border-r border-[#e5e5df] pr-2">
+            NSE Live
+          </span>
+          {Object.values(liveMarket.quotes).slice(0, 3).map((q) => {
+            const dir = liveMarket.tickDirection?.[q.symbol] ?? "flat";
+            return (
+              <div key={q.symbol} className="flex items-center gap-1.5 text-xs px-1">
+                <span className="font-semibold text-stone-700 text-[10px]">{q.symbol.split(" ")[0]}</span>
+                <span
+                  className={`font-mono font-bold text-[11px] transition-colors duration-300 ${
+                    dir === "up" ? "text-emerald-700" : dir === "down" ? "text-rose-700" : "text-stone-900"
+                  }`}
+                >
+                  ₹{q.price.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                </span>
+                <span className={`font-mono text-[9px] font-bold px-1 py-0.5 rounded ${q.change >= 0 ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50"}`}>
+                  {q.change >= 0 ? "+" : ""}{q.changePct.toFixed(1)}%
+                </span>
+                {dir !== "flat" && (
+                  <span className={`text-[8px] font-bold ${dir === "up" ? "text-emerald-600" : "text-rose-600"}`}>
+                    {dir === "up" ? "▲" : "▼"}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Right Section: Trailing Actions */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 border border-emerald-200 rounded-lg bg-emerald-50 text-emerald-800 font-semibold text-xs shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Live Kernel</span>
           </div>
-          <div className="w-px h-6 bg-[#e5e5df] mx-1"></div>
-          <button className="text-stone-400 hover:text-stone-700 transition-colors flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[#eeeeea]">
-            <span className="material-symbols-outlined text-[20px]">
-              notifications
-            </span>
-          </button>
-          <button className="text-stone-400 hover:text-stone-700 transition-colors flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[#eeeeea]">
-            <span className="material-symbols-outlined text-[20px]">
-              settings_input_component
-            </span>
-          </button>
+
+          <div className="w-px h-6 bg-[#e5e5df] mx-0.5"></div>
+
+          <div className="w-8 h-8 rounded-full bg-orange-100 border border-orange-300 flex items-center justify-center text-orange-700 font-bold text-xs shadow-2xs" title="Quant Alpha Terminal Node">
+            QA
+          </div>
         </div>
       </header>
 
