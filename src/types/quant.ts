@@ -43,16 +43,18 @@ export interface BacktestResult {
   strategyName: string;
   lastRunTime: string;
   validationMode: string;
+  dataMode?: string;          // "DEMO (synthetic)" | "RESEARCH (real NSE)"
+  _mode?: string;             // "DEMO" | "RESEARCH"
   totalReturn: number;
   benchmarkReturn: number;
   annualizedSharpe: number;
-  dsr: number; // Deflated Sharpe Ratio (0.0 to 1.0)
+  dsr: number | null;         // null until computed from real CPCV
   annualizedVol: number;
   maxDrawdown: number;
-  maxDrawdownDate: string;
-  pbo: number; // Probability of Backtest Overfitting (0.0 to 1.0)
+  maxDrawdownDate: string | null;
+  pbo: number | null;         // null until computed from real CPCV
   winRate: number;
-  profitFactor: number;
+  profitFactor: number | null;
   calmarRatio: number;
   equityCurve: EquityCurvePoint[];
   tcaMetrics: TCAMetric[];
@@ -83,11 +85,12 @@ export interface SignalItem {
   name: string;
   code: string;
   category: SignalCategory;
-  oosSharpe: number;
-  maxDrawdown: number;
-  dsr: number;
-  pbo: number;
-  status: "Passed Validation" | "Backtest Running" | "Awaiting Data" | "FDR Rejected" | "Failed Quality Check";
+  oosSharpe: number | null;   // null until validated by real CPCV pipeline
+  maxDrawdown: number | null;
+  dsr: number | null;         // null until validated by real CPCV pipeline
+  pbo: number | null;         // null until validated by real CPCV pipeline
+  status: "Passed Validation" | "Rejected" | "Backtest Running" | "Awaiting Validation" | "Awaiting Data" | "FDR Rejected" | "Failed Quality Check";
+  _mode?: string;             // "DEMO" | "RESEARCH"
   description: string;
   formula: string;
 }

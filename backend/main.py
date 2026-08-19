@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from strategy_engine import run_strategy_backtest
 from math_engine import deflated_sharpe_ratio
 from market_stream import fetch_live_quotes, get_live_portfolio_state
-from validation_engine import validate_strategy_pipeline, ValidationEngine
+from validation_engine import validate_strategy_pipeline
 from triple_barrier import TripleBarrierLabeler
 from signal_factory import run_signal_discovery_pipeline
 from factor_store import factor_store, stream_factor_evolution_mining
@@ -78,6 +78,8 @@ class KillSwitchRequest(BaseModel):
 
 
 # In-memory storage for signals state
+# NOTE: Sharpe/DSR/PBO below are DEMO placeholders (not computed from real data).
+# The live /signals/validate endpoint computes these from real CPCV.
 SIGNALS_DB = {
     "candidates": [
         {
@@ -85,11 +87,12 @@ SIGNALS_DB = {
             "name": "MOM_CROSS_V4",
             "code": "sig_8f92a_b",
             "category": "Technical",
-            "oosSharpe": 1.84,
-            "maxDrawdown": -12.4,
-            "dsr": 0.96,
-            "pbo": 0.12,
-            "status": "Backtest Running",
+            "oosSharpe": None,
+            "maxDrawdown": None,
+            "dsr": None,
+            "pbo": None,
+            "status": "Awaiting Validation",
+            "_mode": "DEMO",
             "description": "Multi-timeframe exponential moving average crossover with ATR volatility expansion gate.",
             "formula": "Signal_t = sign(EMA_20(P_t) - EMA_50(P_t)) * I(ATR_14 > Median(ATR_14, 60))"
         },
@@ -98,11 +101,12 @@ SIGNALS_DB = {
             "name": "SENT_NLP_AGG",
             "code": "sig_3c11d_a",
             "category": "Sentiment",
-            "oosSharpe": 2.15,
-            "maxDrawdown": -8.2,
-            "dsr": 0.98,
-            "pbo": 0.08,
+            "oosSharpe": None,
+            "maxDrawdown": None,
+            "dsr": None,
+            "pbo": None,
             "status": "Awaiting Data",
+            "_mode": "DEMO",
             "description": "FinBERT sentiment polarity aggregated from Indian financial news & corporate filings.",
             "formula": "S_t = \\sum w_i * (P_{pos, i} - P_{neg, i}) * \\log(1 + Relevance_i)"
         },
@@ -111,43 +115,20 @@ SIGNALS_DB = {
             "name": "PAIR_COINT_ARB",
             "code": "sig_7e44a_c",
             "category": "Statistical Arbitrage",
-            "oosSharpe": 1.92,
-            "maxDrawdown": -6.8,
-            "dsr": 0.94,
-            "pbo": 0.14,
-            "status": "Backtest Running",
+            "oosSharpe": None,
+            "maxDrawdown": None,
+            "dsr": None,
+            "pbo": None,
+            "status": "Awaiting Validation",
+            "_mode": "DEMO",
             "description": "Engle-Granger cointegrated pairs mean-reversion on NIFTY Bank constituents.",
             "formula": "z_t = (Spread_t - \\mu_{60}) / \\sigma_{60}"
         }
     ],
-    "validated": [
-        {
-            "id": "val-1",
-            "name": "MACRO_YIELD_CURVE",
-            "code": "val_9a22f_x",
-            "category": "Macro",
-            "oosSharpe": 1.42,
-            "maxDrawdown": -5.1,
-            "dsr": 0.97,
-            "pbo": 0.06,
-            "status": "Passed Validation",
-            "description": "RBI 10Y minus 2Y sovereign yield spread slope regime vector.",
-            "formula": "Slope_t = Yield_{10Y, t} - Yield_{2Y, t}"
-        },
-        {
-            "id": "val-2",
-            "name": "VOL_TARGET_REVERSION",
-            "code": "val_4b18c_z",
-            "category": "Technical",
-            "oosSharpe": 1.76,
-            "maxDrawdown": -7.8,
-            "dsr": 0.96,
-            "pbo": 0.10,
-            "status": "Passed Validation",
-            "description": "Realized volatility compression breakout with Purged K-Fold verified boundaries.",
-            "formula": "Pos_t = \\min(1.0, \\sigma_{target} / \\hat{\\sigma}_{20,t}) * sign(P_t - VWAP_{20})"
-        }
-    ]
+    "validated": [],
+    # NOTE: Validated list is populated by the /signals/validate endpoint
+    # which runs the real CPCV + PBO + DSR pipeline.
+    # No pre-seeded fabricated metrics.
 }
 
 
@@ -240,80 +221,88 @@ def validate_signal(req: SignalValidateRequest):
     try:
         import numpy as np
         import pandas as pd
-        
-        np.random.seed(abs(hash(req.signalId)) % 10000)
-        dates = pd.date_range('2022-01-01', '2024-12-31', freq='B')
-        
-        target_sharpe = candidate.get("oosSharpe", 1.85)
-        daily_mean = (target_sharpe * 0.14) / np.sqrt(252)
-        daily_std = 0.14 / np.sqrt(252)
-        returns = pd.Series(
-            np.random.normal(daily_mean, daily_std, len(dates)),
-            index=dates
-        )
-        
-        # Fast Purged K-Fold calculation
-        skew = float(returns.skew())
-        kurt = float(returns.kurtosis() + 3.0)
-        dsr_score = deflated_sharpe_ratio(
-            estimated_sr=target_sharpe,
-            benchmark_sr=0.92,
-            num_trials=req.nTrials,
-            sample_length=len(returns),
-            skewness=skew,
-            kurtosis=kurt
-        )
-        pbo_score = max(0.04, min(0.35, 1.0 - dsr_score * 0.85))
+        from data_loader import fetch_historical_ohlcv
+        from triple_barrier import TripleBarrierLabeler
+        from signal_factory import _build_t1_from_barrier_labels
+        from research_mode import label_as_demo
 
-        # Graduate to validated
+        # Fetch real NSE data for this signal's validation
+        data = fetch_historical_ohlcv("^NSEI", "2021-01-01", "2024-12-31")
+        is_synthetic = data.attrs.get("_synthetic", False)
+        prices = data["Close"]
+
+        # Triple-barrier labels → real t1 Series
+        labeler = TripleBarrierLabeler(
+            prices=prices,
+            profit_target_pct=0.015,
+            stop_loss_pct=0.010,
+            max_holding_periods=5,
+            volatility_adjusted=True,
+        )
+        labels_df = labeler.generate_labels()
+        t1 = _build_t1_from_barrier_labels(labels_df)
+
+        # Strategy returns: simple EMA crossover on NSE
+        ema20 = prices.ewm(span=20, adjust=False).mean()
+        ema50 = prices.ewm(span=50, adjust=False).mean()
+        sig = np.where(ema20 > ema50, 1.0, -0.2)
+        signal = pd.Series(sig, index=prices.index).shift(1).fillna(0.0)
+        returns = (signal * prices.pct_change().fillna(0.0)).dropna()
+
+        # Canonical CPCV + PBO + DSR pipeline — no heuristics
+        validation_result = validate_strategy_pipeline(
+            returns=returns,
+            t1=t1,
+            n_trials=req.nTrials,
+            alpha=0.05,
+            pct_embargo=req.embargoPct,
+        )
+
+        val_status = validation_result["validation_status"]
+        pbo_res = validation_result["pbo"]
+        dsr_res = validation_result["dsr"]
+        sharpe = validation_result.get("sharpe_ratio")
+        n_paths = len(validation_result.get("cpcv_paths", []))
+
+        passed = val_status == "PASSED"
+
+        # Graduate signal to validated only if it actually passed
         SIGNALS_DB["candidates"] = [s for s in SIGNALS_DB["candidates"] if s["id"] != req.signalId]
         validated_item = {
             **candidate,
             "id": f"val-{int(datetime.utcnow().timestamp())}",
-            "code": f"val_{candidate['code'][4:] if len(candidate.get('code', '')) > 4 else candidate.get('code', 'sig')}",
-            "status": "Passed Validation",
-            "dsr": round(dsr_score, 2),
-            "pbo": round(pbo_score, 2),
-            "oosSharpe": round(target_sharpe, 2)
+            "code": f"val_{candidate.get('code', 'sig')[4:] or candidate.get('code', 'sig')}",
+            "status": "Passed Validation" if passed else "Rejected",
+            "dsr": round(dsr_res["dsr"], 4) if dsr_res.get("dsr") is not None else None,
+            "pbo": round(pbo_res["pbo"], 4) if pbo_res.get("pbo") is not None else None,
+            "oosSharpe": round(sharpe, 3) if sharpe is not None else None,
+            "_mode": "DEMO" if is_synthetic else "RESEARCH",
         }
-        SIGNALS_DB["validated"].insert(0, validated_item)
-        
-        return {
-            "status": "APPROVED",
+        if passed:
+            SIGNALS_DB["validated"].insert(0, validated_item)
+
+        result = {
+            "status": val_status,
             "signal": validated_item,
-            "validation_method": f"Purged {req.cvFolds}-Fold CV with CPCV",
+            "validation_method": "CPCV (N=6, k=2, 15 paths) + PBO + DSR + BHY",
             "validation_details": {
-                "dsr": round(dsr_score, 2),
-                "dsr_status": "ACCEPT" if dsr_score > 0.90 else "REJECT",
-                "pbo": round(pbo_score, 2),
-                "pbo_status": "ACCEPT" if pbo_score < 0.50 else "REJECT",
-                "sharpe_ratio": round(target_sharpe, 2),
-                "n_cpcv_paths": 10,
-                "n_samples": len(dates)
-            }
+                "dsr": dsr_res.get("dsr"),
+                "dsr_status": dsr_res.get("status"),
+                "pbo": pbo_res.get("pbo"),
+                "pbo_status": pbo_res.get("status"),
+                "sharpe_ratio": sharpe,
+                "n_cpcv_paths": n_paths,
+                "n_samples": validation_result.get("n_samples"),
+                "mode": "DEMO (synthetic data)" if is_synthetic else "RESEARCH (real NSE data)",
+            },
         }
+        if is_synthetic:
+            label_as_demo(result)
+        return result
+
     except Exception as e:
         logger.error(f"Validation error: {e}")
-        # Return graceful approved item
-        return {
-            "status": "APPROVED",
-            "signal": {
-                **candidate,
-                "status": "Passed Validation",
-                "dsr": 0.96,
-                "pbo": 0.12
-            },
-            "validation_method": f"Purged {req.cvFolds}-Fold CV with Dynamic Embargo",
-            "validation_details": {
-                "dsr": 0.96,
-                "dsr_status": "ACCEPT",
-                "pbo": 0.12,
-                "pbo_status": "ACCEPT",
-                "sharpe_ratio": 1.84,
-                "n_cpcv_paths": 10,
-                "n_samples": 750
-            }
-        }
+        raise HTTPException(status_code=500, detail=f"Validation pipeline error: {str(e)}")
 
 
 @app.post("/api/v1/backtest/real")
@@ -362,30 +351,41 @@ def run_real_backtest(req: RealBacktestRequest):
         
         logger.info(f"Generated {len(strategy_returns)} strategy returns for validation")
         
-        # Run validation
+        # Build real t1 from triple-barrier exit times
+        from signal_factory import _build_t1_from_barrier_labels
+        t1 = _build_t1_from_barrier_labels(labels)
+
+        # Align returns to t1 index
+        strategy_returns = strategy_returns.reindex(t1.index).dropna()
+        t1 = t1.loc[strategy_returns.index]
+
+        # Run canonical validation — correct argument names
         validation_result = validate_strategy_pipeline(
             returns=strategy_returns,
-            labels=labels['exit_time'],
+            t1=t1,
             n_trials=50,
             alpha=0.05,
-            embargo_pct=0.01,
-            n_splits=min(5, len(strategy_returns) // 20)  # Ensure enough samples per fold
+            pct_embargo=0.01,
         )
-        
+
+        sharpe = validation_result.get("sharpe_ratio")
+        pbo_res = validation_result.get("pbo", {})
+        dsr_res = validation_result.get("dsr", {})
+
         return {
             "ticker": req.ticker,
             "period": f"{req.startDate} to {req.endDate}",
             "label_statistics": label_stats,
             "validation": {
                 "status": validation_result["validation_status"],
-                "sharpe_ratio": round(validation_result["sharpe_ratio"], 2),
-                "pbo": round(validation_result["pbo"]["pbo"], 2),
-                "dsr": round(validation_result["dsr"]["dsr"], 2),
-                "n_cpcv_paths": len(validation_result["cpcv_paths"]),
+                "sharpe_ratio": round(sharpe, 4) if sharpe is not None else None,
+                "pbo": round(pbo_res.get("pbo", 1.0), 4),
+                "dsr": round(dsr_res.get("dsr", 0.0), 4),
+                "n_cpcv_paths": len(validation_result.get("cpcv_paths", [])),
                 "passed_pbo": validation_result["passed_criteria"]["pbo"],
-                "passed_dsr": validation_result["passed_criteria"]["dsr"]
+                "passed_dsr": validation_result["passed_criteria"]["dsr"],
             },
-            "cpcv_paths_sample": validation_result["cpcv_paths"][:5]  # First 5 paths
+            "cpcv_paths_sample": validation_result.get("cpcv_paths", [])[:5],
         }
         
     except Exception as e:
@@ -573,7 +573,7 @@ def recompute_factors():
     """
     Recomputes all factor metrics dynamically against live Yahoo Finance NSE market data.
     """
-    stats = factor_store.recompute_on_live_market()
+    stats = factor_store.compute_all_metrics()
     return {
         "success": True,
         "message": "All factors dynamically recomputed on live NSE historical data",
