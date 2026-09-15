@@ -13,7 +13,7 @@ from typing import List, Optional
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 from strategy_engine import run_strategy_backtest
 from math_engine import deflated_sharpe_ratio

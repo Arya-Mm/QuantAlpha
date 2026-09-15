@@ -1,12 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getSession } from "@/lib/session"
 
-const PYTHON_BASE = process.env.PYTHON_API_BASE
-
-function getBackendBase(req: NextRequest) {
-  if (PYTHON_BASE) return PYTHON_BASE.replace(/\/$/, "")
-  return `${req.nextUrl.origin}/api/quant`
-}
+const PYTHON_BASE = process.env.PYTHON_API_BASE ?? "http://127.0.0.1:8000"
 
 /**
  * Authenticated proxy between the browser and the Python research backend.
@@ -28,7 +23,7 @@ async function forward(req: NextRequest, path: string[]) {
   }
 
   const search = req.nextUrl.search
-  const target = `${getBackendBase(req)}/${path.join("/")}${search}`
+  const target = `${PYTHON_BASE}/${path.join("/")}${search}`
 
   const headers: Record<string, string> = {
     "x-user-id": session.user.id,

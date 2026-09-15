@@ -1,8 +1,1 @@
-{
-  "experimentalServices": {
-    "quant-backend": {
-      "entrypoint": "backend/main.py",
-      "routePrefix": "/api/quant"
-    }
-  }
-}
+{}
