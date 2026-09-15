@@ -13,6 +13,12 @@ export default function OverviewDashboard() {
   const { data: session, isPending } = useSession();
   const liveMarket = useLiveMarket();
 
+  const [timeframe, setTimeframe] = useState<TimeFrame>("ALL");
+  const [isRunningPipeline, setIsRunningPipeline] = useState(false);
+  const [pipelineProgress, setPipelineProgress] = useState<string | null>(null);
+  const [lastRunTime, setLastRunTime] = useState("8m ago");
+  const [pipelineActiveIndex, setPipelineActiveIndex] = useState<number | null>(null);
+
   useEffect(() => {
     if (!isPending && !session?.user) router.replace("/sign-in");
   }, [isPending, router, session?.user]);
@@ -24,11 +30,6 @@ export default function OverviewDashboard() {
       </main>
     );
   }
-  const [timeframe, setTimeframe] = useState<TimeFrame>("ALL");
-  const [isRunningPipeline, setIsRunningPipeline] = useState(false);
-  const [pipelineProgress, setPipelineProgress] = useState<string | null>(null);
-  const [lastRunTime, setLastRunTime] = useState("8m ago");
-  const [pipelineActiveIndex, setPipelineActiveIndex] = useState<number | null>(null);
 
   // Dynamic metrics per timeframe
   const metricsData = {
