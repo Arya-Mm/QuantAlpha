@@ -1,13 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useLiveMarket } from "../hooks/useLiveMarket";
+import { signOut, useSession } from "../lib/auth-client";
 
 type TimeFrame = "1Y" | "3Y" | "5Y" | "ALL";
 
 export default function OverviewDashboard() {
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
   const liveMarket = useLiveMarket();
+
+  useEffect(() => {
+    if (!isPending && !session?.user) router.replace("/sign-in");
+  }, [isPending, router, session?.user]);
+
+  if (isPending || !session?.user) {
+    return (
+      <main className="min-h-screen bg-[#f5f5f2] flex items-center justify-center text-stone-600">
+        Checking your session...
+      </main>
+    );
+  }
   const [timeframe, setTimeframe] = useState<TimeFrame>("ALL");
   const [isRunningPipeline, setIsRunningPipeline] = useState(false);
   const [pipelineProgress, setPipelineProgress] = useState<string | null>(null);
@@ -275,6 +291,19 @@ export default function OverviewDashboard() {
                 expand_more
               </span>
             </div>
+          </div>
+          <div className="flex items-center justify-between gap-2 mb-3 px-1">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-stone-800 truncate">{session.user.name}</p>
+              <p className="text-[10px] text-stone-500 truncate">{session.user.email}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void signOut({ fetchOptions: { onSuccess: () => router.replace("/sign-in") } })}
+              className="text-xs font-semibold text-stone-500 hover:text-orange-700"
+            >
+              Log out
+            </button>
           </div>
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between font-body-sm text-xs">
