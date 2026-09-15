@@ -28,6 +28,7 @@ export default function Backtests() {
   // Animated equity curve state
   const [animatedCurve, setAnimatedCurve] = useState(EMPTY_BACKTEST_RESULT.equityCurve);
   const [streamStatus, setStreamStatus] = useState<"idle" | "computing" | "streaming" | "done">("idle");
+  const [revealedMetrics, setRevealedMetrics] = useState(false);
 
   const handleRunBacktest = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
