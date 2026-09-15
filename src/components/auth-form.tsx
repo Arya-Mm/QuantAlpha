@@ -48,7 +48,7 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   }
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full max-w-[28rem]">
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-6">
           <div className="h-8 w-8 rounded-lg bg-primary text-on-primary grid place-items-center font-bold">Q</div>

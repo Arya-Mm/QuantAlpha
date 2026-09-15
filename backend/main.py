@@ -30,6 +30,19 @@ logger = logging.getLogger(__name__)
 
 job_executor = ThreadPoolExecutor(max_workers=2)
 
+
+def require_proxy_user(
+    x_internal_secret: Optional[str] = Header(default=None),
+    x_user_id: Optional[str] = Header(default=None),
+) -> str:
+    expected_secret = os.environ.get("INTERNAL_API_SECRET")
+    if not expected_secret or x_internal_secret != expected_secret:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if not x_user_id or len(x_user_id) > 200:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return x_user_id
+
+
 app = FastAPI(
     title="QuantAlpha Real-Time Quantitative Engine",
     version="1.1.0",
@@ -150,9 +163,9 @@ def run_backtest(req: BacktestRequest):
 
 
 @app.get("/api/v1/signals")
-def get_signals():
-    """Retrieve persisted candidate and validated signals."""
-    signals = list_signals()
+def get_signals(user_id: str = Depends(require_proxy_user)):
+    """Retrieve persisted candidate and validated signals for the session user."""
+    signals = list_signals(user_id)
     return {
         "candidates": [signal for signal in signals if signal["status"] not in ("Passed Validation", "Rejected")],
         "validated": [signal for signal in signals if signal["status"] == "Passed Validation"],
@@ -160,20 +173,20 @@ def get_signals():
 
 
 @app.get("/api/v1/research/runs")
-def get_research_runs(signal_id: Optional[str] = Query(None)):
+def get_research_runs(signal_id: Optional[str] = Query(None), user_id: str = Depends(require_proxy_user)):
     try:
-        return {"runs": list_research_runs(signal_id)}
+        return {"runs": list_research_runs(signal_id, user_id)}
     except Exception as exc:
         logger.error("Unable to load research history: %s", exc)
         raise HTTPException(status_code=503, detail="Persistent research history unavailable") from exc
 
 
 @app.post("/api/v1/signals")
-def create_signal(req: SignalCreateRequest):
+def create_signal(req: SignalCreateRequest, user_id: str = Depends(require_proxy_user)):
     """Create a persistent signal candidate for a real validation run."""
     signal = {**req.model_dump(), "status": "Awaiting Validation"}
     try:
-        upsert_signal(signal)
+        upsert_signal(signal, user_id)
     except Exception as exc:
         logger.error("Unable to persist signal: %s", exc)
         raise HTTPException(status_code=503, detail="Persistent signal store unavailable") from exc
@@ -185,25 +198,25 @@ def get_datasets():
     return {"datasets": [{"id": "nifty-50-yahoo", "label": "NIFTY 50", "ticker": "^NSEI", "source": "Yahoo Finance", "kind": "historical_ohlcv"}]}
 
 
-def _run_validation_job(run_id: str, req: SignalValidateRequest) -> None:
+def _run_validation_job(run_id: str, req: SignalValidateRequest, user_id: str) -> None:
     try:
-        update_research_run(run_id, "running", {"progress": 10, "stage": "Fetching verified OHLCV"})
-        result, data_hash = _compute_validation(req)
-        update_research_run(run_id, "completed", {"progress": 100, "stage": "Complete", "result": result}, data_hash=data_hash)
+        update_research_run(run_id, "running", {"progress": 10, "stage": "Fetching verified OHLCV"}, user_id=user_id)
+        result, data_hash = _compute_validation(req, user_id)
+        update_research_run(run_id, "completed", {"progress": 100, "stage": "Complete", "result": result}, data_hash=data_hash, user_id=user_id)
     except HTTPException as exc:
         logger.warning("Validation job rejected: %s", exc.detail)
-        update_research_run(run_id, "failed", {"progress": 100, "stage": "Failed"}, str(exc.detail))
+        update_research_run(run_id, "failed", {"progress": 100, "stage": "Failed"}, str(exc.detail), user_id=user_id)
     except Exception as exc:
         logger.exception("Validation job failed")
-        update_research_run(run_id, "failed", {"progress": 100, "stage": "Failed"}, str(exc))
+        update_research_run(run_id, "failed", {"progress": 100, "stage": "Failed"}, str(exc), user_id=user_id)
 
 
 @app.post("/api/v1/signals/validate/start")
-def start_validation(req: SignalValidateRequest):
+def start_validation(req: SignalValidateRequest, user_id: str = Depends(require_proxy_user)):
     run_id = utc_run_id("validation")
     # Guard against duplicate concurrent jobs for the same signal + configuration.
     try:
-        existing = list_research_runs(req.signalId)
+        existing = list_research_runs(req.signalId, user_id)
     except Exception as exc:
         raise HTTPException(status_code=503, detail="Persistent research store unavailable") from exc
     params = req.model_dump()
@@ -217,32 +230,32 @@ def start_validation(req: SignalValidateRequest):
         if run.get("status") in ("queued", "running") and run_params == params:
             return {"run_id": run["id"], "status": run["status"], "deduplicated": True}
 
-    persist_research_run(run_id, req.signalId, "validation", "queued", params, {"progress": 0, "stage": "Queued"}, "Yahoo Finance verified OHLCV")
-    job_executor.submit(_run_validation_job, run_id, req)
+    persist_research_run(run_id, req.signalId, "validation", "queued", params, {"progress": 0, "stage": "Queued"}, "Yahoo Finance verified OHLCV", user_id=user_id)
+    job_executor.submit(_run_validation_job, run_id, req, user_id)
     return {"run_id": run_id, "status": "queued"}
 
 
 @app.post("/api/v1/signals/validate")
-def validate_signal(req: SignalValidateRequest):
+def validate_signal(req: SignalValidateRequest, user_id: str = Depends(require_proxy_user)):
     """Executes REAL Purged K-Fold CV (CPCV + PBO + DSR) synchronously and persists one run."""
     run_id = utc_run_id("validation")
-    persist_research_run(run_id, req.signalId, "validation", "running", req.model_dump(), {"progress": 0, "stage": "Running"}, "Yahoo Finance verified OHLCV")
+    persist_research_run(run_id, req.signalId, "validation", "running", req.model_dump(), {"progress": 0, "stage": "Running"}, "Yahoo Finance verified OHLCV", user_id=user_id)
     try:
-        result, data_hash = _compute_validation(req)
+        result, data_hash = _compute_validation(req, user_id)
     except HTTPException as exc:
-        update_research_run(run_id, "failed", {"progress": 100, "stage": "Failed"}, str(exc.detail))
+        update_research_run(run_id, "failed", {"progress": 100, "stage": "Failed"}, str(exc.detail), user_id=user_id)
         raise
     except Exception as exc:
-        update_research_run(run_id, "failed", {"progress": 100, "stage": "Failed"}, str(exc))
+        update_research_run(run_id, "failed", {"progress": 100, "stage": "Failed"}, str(exc), user_id=user_id)
         raise HTTPException(status_code=500, detail=f"Validation pipeline error: {exc}") from exc
-    update_research_run(run_id, "completed", {"progress": 100, "stage": "Complete", "result": result}, data_hash=data_hash)
+    update_research_run(run_id, "completed", {"progress": 100, "stage": "Complete", "result": result}, data_hash=data_hash, user_id=user_id)
     return result
 
 
-def _compute_validation(req: SignalValidateRequest) -> tuple[dict, str]:
+def _compute_validation(req: SignalValidateRequest, user_id: str) -> tuple[dict, str]:
     """Pure validation computation against verified OHLCV. Returns (result, data_hash); persistence handled by callers."""
     try:
-        candidate = next((s for s in list_signals() if s["id"] == req.signalId), None)
+        candidate = next((s for s in list_signals(user_id) if s["id"] == req.signalId), None)
     except Exception as exc:
         logger.error("Unable to load persisted signals: %s", exc)
         raise HTTPException(status_code=503, detail="Persistent signal store unavailable") from exc
@@ -309,7 +322,7 @@ def _compute_validation(req: SignalValidateRequest) -> tuple[dict, str]:
         "metrics": {"oosSharpe": sharpe, "dsr": dsr_res.get("dsr"), "pbo": pbo_res.get("pbo")},
         "_mode": "RESEARCH",
     }
-    upsert_signal(validated_item)
+    upsert_signal(validated_item, user_id)
 
     result = {
         "status": val_status,
