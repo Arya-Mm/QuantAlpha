@@ -155,7 +155,23 @@ export async function fetchResearchRuns(signalId?: string) {
   const query = signalId ? `?signal_id=${encodeURIComponent(signalId)}` : "";
   const response = await fetch(`${API}/research/runs${query}`, { cache: "no-store" });
   if (!response.ok) throw new Error("Research history unavailable");
-  return response.json() as Promise<{ runs: Array<Record<string, unknown>> }>;
+  const payload = (await response.json()) as { runs: Array<Record<string, unknown>> };
+  const parseJson = (value: unknown) => {
+    if (typeof value !== "string") return value;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  };
+
+  return {
+    runs: payload.runs.map((run) => ({
+      ...run,
+      parameters: parseJson(run.parameters),
+      result: parseJson(run.result),
+    })),
+  };
 }
 
 export async function fetchSignals(): Promise<SignalCatalog> {

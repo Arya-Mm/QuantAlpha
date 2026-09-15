@@ -11,7 +11,7 @@ export default function ReportsPage() {
   const [status, setStatus] = useState("Loading persisted research runs...");
 
   useEffect(() => {
-    void fetchResearchRuns().then((data) => { setRuns(data.runs as Run[]); setStatus("Reports are generated from persisted validation runs."); }).catch((error) => setStatus(error instanceof Error ? error.message : "Research history unavailable."));
+    void fetchResearchRuns().then((data) => { setRuns(data.runs as unknown as Run[]); setStatus("Reports are generated from persisted validation runs."); }).catch((error) => setStatus(error instanceof Error ? error.message : "Research history unavailable."));
   }, []);
 
   return (
