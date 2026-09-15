@@ -72,52 +72,34 @@ def run_strategy_backtest(
     is_synthetic = benchmark_df.attrs.get("_synthetic", False)
 
     if prices_df.empty or benchmark_df.empty or "Close" not in benchmark_df.columns:
-        # In RESEARCH mode data_loader would have raised. We're in DEMO.
-        prices_df = pd.DataFrame(index=pd.date_range(start_date, end_date, freq="B"))
-        rng = np.random.default_rng(42)
-        daily_rets = pd.Series(rng.normal(0.0007, 0.011, len(prices_df)), index=prices_df.index)
-        bench_rets = pd.Series(rng.normal(0.0004, 0.010, len(prices_df)), index=prices_df.index)
-        is_synthetic = True
+        raise ValueError("Verified historical market data is unavailable for this backtest")
+
+    bench_close = benchmark_df["Close"].reindex(prices_df.index if not prices_df.empty else benchmark_df.index).ffill().bfill()
+    bench_rets = bench_close.pct_change().fillna(0.0)
+
+    if "Momentum" in strategy:
+        first_col = prices_df.columns[0]
+        price = prices_df[first_col]
+        ema20 = price.ewm(span=20, adjust=False).mean()
+        ema50 = price.ewm(span=50, adjust=False).mean()
+        signal = np.where(ema20 > ema50, 1.0, -0.2)
+        daily_rets = pd.Series(signal, index=prices_df.index).shift(1).fillna(0.0) * price.pct_change().fillna(0.0)
+    elif "Arbitrage" in strategy and prices_df.shape[1] >= 2:
+        p1, p2 = prices_df.iloc[:, 0], prices_df.iloc[:, 1]
+        spread = p1 - (p2 * (p1.iloc[0] / p2.iloc[0]))
+        zscore = (spread - spread.rolling(60).mean()) / (spread.rolling(60).std() + 1e-8)
+        sig = np.where(zscore < -1.5, 1.0, np.where(zscore > 1.5, -1.0, 0.0))
+        daily_rets = pd.Series(sig, index=prices_df.index).shift(1).fillna(0.0) * (p1.pct_change() - p2.pct_change()).fillna(0.0)
+    elif "Volatility" in strategy:
+        vol20 = bench_rets.rolling(20).std() * np.sqrt(252)
+        leverage = (0.15 / (vol20 + 1e-6)).clip(0.2, 1.5)
+        daily_rets = bench_rets * leverage.shift(1).fillna(1.0)
     else:
-        bench_close = benchmark_df["Close"].reindex(prices_df.index if not prices_df.empty else benchmark_df.index).ffill().bfill()
-        bench_rets = bench_close.pct_change().fillna(0.0)
-
-        if "Momentum" in strategy:
-            first_col = prices_df.columns[0] if not prices_df.empty else None
-            if first_col:
-                price = prices_df[first_col]
-                ema20 = price.ewm(span=20, adjust=False).mean()
-                ema50 = price.ewm(span=50, adjust=False).mean()
-                signal = np.where(ema20 > ema50, 1.0, -0.2)
-                asset_rets = price.pct_change().fillna(0.0)
-                daily_rets = pd.Series(signal, index=prices_df.index).shift(1).fillna(0.0) * asset_rets
-            else:
-                daily_rets = bench_rets.copy()
-
-        elif "Arbitrage" in strategy:
-            if prices_df.shape[1] >= 2:
-                p1, p2 = prices_df.iloc[:, 0], prices_df.iloc[:, 1]
-                spread = p1 - (p2 * (p1.iloc[0] / p2.iloc[0]))
-                zscore = (spread - spread.rolling(60).mean()) / (spread.rolling(60).std() + 1e-8)
-                sig = np.where(zscore < -1.5, 1.0, np.where(zscore > 1.5, -1.0, 0.0))
-                spread_ret = (p1.pct_change() - p2.pct_change()).fillna(0.0)
-                daily_rets = pd.Series(sig, index=prices_df.index).shift(1).fillna(0.0) * spread_ret
-            else:
-                daily_rets = bench_rets.copy()
-
-        elif "Volatility" in strategy:
-            vol20 = bench_rets.rolling(20).std() * np.sqrt(252)
-            target_vol = 0.15
-            leverage = (target_vol / (vol20 + 1e-6)).clip(0.2, 1.5)
-            daily_rets = bench_rets * leverage.shift(1).fillna(1.0)
-
-        else:
-            # Fallback: benchmark return
-            daily_rets = bench_rets.copy()
+        raise ValueError("Unsupported strategy. Choose Momentum, Arbitrage, or Volatility Targeting.")
 
     # Transaction cost drag
-    turnover_factor = 2.4  # annual turnover estimate
-    cost_drag_daily = ((comm_bps + slippage_bps) / 10_000.0) * (turnover_factor / 252.0)
+    turnover = float(daily_rets.diff().abs().fillna(0.0).mean())
+    cost_drag_daily = ((comm_bps + slippage_bps) / 10_000.0) * turnover
     net_daily_rets = daily_rets - cost_drag_daily
 
     cum_strat = (1.0 + net_daily_rets).cumprod()
@@ -187,11 +169,10 @@ def run_strategy_backtest(
             "benchmarkReturn": round(pt_bench, 1),
         })
 
+    total_cost_bps = (comm_bps + slippage_bps) * turnover
     tca_breakdown = [
-        {"name": "Arrival Slippage", "valueBps": round(slippage_bps * 0.7, 1), "impactPnL": int(slippage_bps * 4800), "distributionPct": 42, "color": "bg-orange-500"},
-        {"name": "Brokerage Comm.", "valueBps": comm_bps, "impactPnL": int(comm_bps * 4800), "distributionPct": 26, "color": "bg-amber-500"},
-        {"name": "Exchange & STT Fees", "valueBps": 1.1, "impactPnL": 5280, "distributionPct": 20, "color": "bg-stone-400"},
-        {"name": "Spread Crossing", "valueBps": 0.8, "impactPnL": 3840, "distributionPct": 12, "color": "bg-stone-300"},
+        {"name": "Commission", "valueBps": round(comm_bps * turnover, 3), "impactPnL": 0, "distributionPct": round(comm_bps / max(comm_bps + slippage_bps, 1e-9) * 100, 1), "color": "bg-orange-500"},
+        {"name": "Slippage", "valueBps": round(slippage_bps * turnover, 3), "impactPnL": 0, "distributionPct": round(slippage_bps / max(comm_bps + slippage_bps, 1e-9) * 100, 1), "color": "bg-amber-500"},
     ]
 
     result = {
