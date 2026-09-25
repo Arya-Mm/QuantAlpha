@@ -12,7 +12,7 @@ import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from research_mode import ResearchDataUnavailable
+from research_mode import ResearchDataUnavailable, is_research_mode
 
 CACHE_DIR = os.path.join(os.path.dirname(__file__), "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
