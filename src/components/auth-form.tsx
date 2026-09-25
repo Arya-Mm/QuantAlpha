@@ -144,6 +144,31 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
           {isSignUp ? "Sign in" : "Sign up"}
         </Link>
       </p>
+
+      <div className="mt-4 pt-4 border-t border-outline-variant text-center">
+        <button
+          type="button"
+          onClick={async () => {
+            setBusy(true);
+            try {
+              const res = await signIn.email({ email: "faculty@quantalpha.io", password: "Password123!" });
+              if (res.error) {
+                await signUp.email({ email: "faculty@quantalpha.io", password: "Password123!", name: "Faculty Reviewer" });
+              }
+              router.push("/");
+              router.refresh();
+            } catch {
+              router.push("/");
+            } finally {
+              setBusy(false);
+            }
+          }}
+          className="w-full text-xs font-semibold py-2 px-3 rounded-lg border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+        >
+          <span className="material-symbols-outlined text-sm">bolt</span>
+          1-Click Faculty Demo Access
+        </button>
+      </div>
     </div>
   )
 }

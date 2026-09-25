@@ -3,6 +3,16 @@
     "backend"
   ],
   "extraPaths": [
+    "./backend",
     "backend"
+  ],
+  "executionEnvironments": [
+    {
+      "root": "backend",
+      "extraPaths": [
+        ".",
+        ".."
+      ]
+    }
   ]
 }

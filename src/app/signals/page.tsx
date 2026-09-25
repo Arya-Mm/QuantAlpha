@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { FactorItem, FactorQuality, EvolutionPhase, FactorLibraryStats } from "../../types/quant";
 import { useLiveMarket } from "../../hooks/useLiveMarket";
+import { Sidebar } from "../../components/sidebar";
 
 const DEFAULT_STATS: FactorLibraryStats = {
   total_factors: 7,
@@ -401,78 +402,8 @@ export default function SignalsPage() {
 
   return (
     <div className="bg-[#f5f5f2] text-stone-900 font-body-sm text-body-sm min-h-screen flex antialiased w-full relative">
-      {/* SideNavBar */}
-      <nav className="w-60 h-full fixed left-0 top-0 bg-white border-r border-[#e5e5df] flex flex-col py-4 z-20 shadow-xs">
-        <div className="px-6 mb-6 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-orange-500 flex items-center justify-center text-white shadow-2xs">
-            <span className="material-symbols-outlined text-[20px]">
-              show_chart
-            </span>
-          </div>
-          <div>
-            <h1 className="text-headline-md font-headline-md font-bold text-stone-900 tracking-tight">
-              QUANT ALPHA
-            </h1>
-            <p className="text-label-caps text-[10px] text-stone-500 uppercase tracking-wider font-semibold">
-              Research Pipeline
-            </p>
-          </div>
-        </div>
-
-        <div className="flex-1 flex flex-col gap-1 px-2">
-          <Link
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-stone-600 hover:bg-[#eeeeea] hover:text-stone-900 transition-colors"
-            href="/"
-          >
-            <span className="material-symbols-outlined text-[20px]">dashboard</span>
-            <span className="font-body-sm text-body-sm font-medium">Overview</span>
-          </Link>
-
-          <Link
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-stone-600 hover:bg-[#eeeeea] hover:text-stone-900 transition-colors"
-            href="/research"
-          >
-            <span className="material-symbols-outlined text-[20px]">science</span>
-            <span className="font-body-sm text-body-sm font-medium">Research</span>
-          </Link>
-
-          {/* ACTIVE TAB: Signals / Factor Library */}
-          <Link
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-orange-600 bg-orange-50 font-semibold border border-orange-200/70 transition-all"
-            href="/signals"
-          >
-            <span className="material-symbols-outlined text-[20px]">analytics</span>
-            <span className="font-body-sm text-body-sm font-semibold">Factor Library</span>
-          </Link>
-
-          <Link
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-stone-600 hover:bg-[#eeeeea] hover:text-stone-900 transition-colors"
-            href="/backtests"
-          >
-            <span className="material-symbols-outlined text-[20px]">history</span>
-            <span className="font-body-sm text-body-sm font-medium">Backtests</span>
-          </Link>
-
-          <Link
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-stone-600 hover:bg-[#eeeeea] hover:text-stone-900 transition-colors"
-            href="/command-center"
-          >
-            <span className="material-symbols-outlined text-[20px]">monitoring</span>
-            <span className="font-body-sm text-body-sm font-medium">Live Monitor</span>
-          </Link>
-        </div>
-
-        <div className="flex flex-col gap-1 px-2 mt-auto pt-4 border-t border-[#e5e5df]">
-          <div className="p-3 bg-[#f8f8f6] rounded-lg border border-[#e5e5df] text-[11px] space-y-1">
-            <div className="font-bold text-stone-900 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-              QuantaAlpha Engine
-            </div>
-            <div className="text-stone-600 font-mono">Self-Evolving Trajectories</div>
-            <div className="text-stone-400 text-[10px]">arXiv:2602.07085 Framework</div>
-          </div>
-        </div>
-      </nav>
+      {/* Unified Sidebar */}
+      <Sidebar />
 
       {/* TopAppBar */}
       <header className="fixed top-0 right-0 h-16 w-[calc(100%-240px)] bg-white/90 border-b border-[#e5e5df] flex justify-between items-center px-6 z-20 backdrop-blur-md shadow-2xs">
@@ -753,26 +684,26 @@ export default function SignalsPage() {
 
                       <td className="py-3 px-3">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[10px] border ${
-                          f.quality === "sota" ? "bg-amber-50 border-amber-300 text-amber-800" :
-                          f.quality === "high" ? "bg-emerald-50 border-emerald-200 text-emerald-800" :
+                          (f.quality || "candidate") === "sota" ? "bg-amber-50 border-amber-300 text-amber-800" :
+                          (f.quality || "candidate") === "high" ? "bg-emerald-50 border-emerald-200 text-emerald-800" :
                           "bg-stone-50 border-stone-200 text-stone-700"
                         }`}>
-                          {f.quality === "sota" && "⭐ "}
-                          {f.quality.toUpperCase()}
+                          {(f.quality || "candidate") === "sota" && "⭐ "}
+                          {(f.quality || "candidate").toUpperCase()}
                         </span>
                       </td>
 
                       <td className="py-3 px-3">
                         <div className="flex flex-col gap-0.5">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold font-mono w-max border ${
-                            f.evolution_phase === "crossover" ? "bg-purple-50 text-purple-700 border-purple-200" :
-                            f.evolution_phase === "mutation" ? "bg-blue-50 text-blue-700 border-blue-200" :
+                            (f.evolution_phase || "original") === "crossover" ? "bg-purple-50 text-purple-700 border-purple-200" :
+                            (f.evolution_phase || "original") === "mutation" ? "bg-blue-50 text-blue-700 border-blue-200" :
                             "bg-stone-50 text-stone-600 border-stone-200"
                           }`}>
-                            {f.evolution_phase.toUpperCase()} (R{f.round_number})
+                            {(f.evolution_phase || "original").toUpperCase()} (R{f.round_number ?? 0})
                           </span>
                           <span className="text-[10px] text-stone-400 font-mono">
-                            {f.trajectory_id}
+                            {f.trajectory_id || "traj_default_01"}
                           </span>
                         </div>
                       </td>
@@ -827,9 +758,9 @@ export default function SignalsPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                    selectedFactor.quality === "sota" ? "bg-amber-50 border-amber-300 text-amber-800" : "bg-emerald-50 border-emerald-200 text-emerald-800"
+                    (selectedFactor.quality || "candidate") === "sota" ? "bg-amber-50 border-amber-300 text-amber-800" : "bg-emerald-50 border-emerald-200 text-emerald-800"
                   }`}>
-                    {selectedFactor.quality.toUpperCase()} ALPHA
+                    {(selectedFactor.quality || "candidate").toUpperCase()} ALPHA
                   </span>
                   <span className="font-mono text-xs text-stone-400">ID: {selectedFactor.factor_id}</span>
                 </div>
