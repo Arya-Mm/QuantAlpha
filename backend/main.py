@@ -252,8 +252,46 @@ def validate_signal(req: SignalValidateRequest, user_id: str = Depends(require_p
     return result
 
 
+def _build_signal_from_definition(prices, definition: dict):
+    """Compile the small, auditable strategy DSL stored with a signal into positions."""
+    import numpy as np
+    import pandas as pd
+
+    text = f"{definition.get('name', '')} {definition.get('code', '')} {definition.get('formula', '')}".lower()
+    close = prices.astype(float)
+    fast = int(definition.get("fast_period", 20))
+    slow = int(definition.get("slow_period", 50))
+    horizon = int(definition.get("horizon", 5))
+    if fast < 2 or slow <= fast or slow > 252:
+        raise HTTPException(status_code=422, detail="Strategy periods must satisfy 2 <= fast < slow <= 252")
+
+    if "rsi" in text:
+        delta = close.diff()
+        gain = delta.clip(lower=0).rolling(fast).mean()
+        loss = (-delta.clip(upper=0)).rolling(fast).mean()
+        rsi = 100 - (100 / (1 + gain / loss.replace(0, np.nan)))
+        threshold = float(definition.get("threshold", 55))
+        positions = pd.Series(np.where(rsi > threshold, 1.0, np.where(rsi < 100 - threshold, -1.0, 0.0)), index=close.index)
+        label = f"RSI({fast}) threshold {threshold:g}"
+    elif "mean" in text or "reversion" in text:
+        mean = close.rolling(slow).mean()
+        z = (close - mean) / close.rolling(slow).std().replace(0, np.nan)
+        threshold = float(definition.get("threshold", 1.0))
+        positions = pd.Series(np.where(z < -threshold, 1.0, np.where(z > threshold, -1.0, 0.0)), index=close.index)
+        label = f"Mean reversion z-score({slow}) threshold {threshold:g}"
+    elif "momentum" in text or "ema" in text or "crossover" in text:
+        fast_ema = close.ewm(span=fast, adjust=False).mean()
+        slow_ema = close.ewm(span=slow, adjust=False).mean()
+        positions = pd.Series(np.where(fast_ema > slow_ema, 1.0, -1.0), index=close.index)
+        label = f"EMA crossover({fast}/{slow})"
+    else:
+        raise HTTPException(status_code=422, detail="Unsupported strategy. Use EMA crossover, RSI, momentum, or mean reversion in the strategy definition.")
+
+    return positions.shift(1).fillna(0.0), {"rule": label, "fast_period": fast, "slow_period": slow, "horizon": horizon}
+
+
 def _compute_validation(req: SignalValidateRequest, user_id: str) -> tuple[dict, str]:
-    """Pure validation computation against verified OHLCV. Returns (result, data_hash); persistence handled by callers."""
+    """Run the stored strategy definition against verified OHLCV and persist only derived results."""
     try:
         candidate = next((s for s in list_signals(user_id) if s["id"] == req.signalId), None)
     except Exception as exc:
@@ -286,12 +324,14 @@ def _compute_validation(req: SignalValidateRequest, user_id: str) -> tuple[dict,
     labels_df = labeler.generate_labels()
     t1 = _build_t1_from_barrier_labels(labels_df)
 
-    # Strategy returns: simple EMA crossover on NSE
-    ema20 = prices.ewm(span=20, adjust=False).mean()
-    ema50 = prices.ewm(span=50, adjust=False).mean()
-    sig = np.where(ema20 > ema50, 1.0, -0.2)
-    signal = pd.Series(sig, index=prices.index).shift(1).fillna(0.0)
-    returns = (signal * prices.pct_change().fillna(0.0)).dropna()
+    # Compile the persisted strategy definition; no hidden/fixed strategy is used.
+    signal, strategy_definition = _build_signal_from_definition(prices, candidate)
+    gross_returns = (signal * prices.pct_change().fillna(0.0)).dropna()
+    turnover = signal.diff().abs().reindex(gross_returns.index).fillna(0.0)
+    cost_rate = 0.0005
+    returns = (gross_returns - turnover * cost_rate).dropna()
+    if returns.abs().sum() == 0:
+        raise HTTPException(status_code=422, detail="Strategy produced no trades in the selected period")
 
     # Canonical CPCV + PBO + DSR pipeline — no heuristics
     validation_result = validate_strategy_pipeline(
@@ -328,6 +368,16 @@ def _compute_validation(req: SignalValidateRequest, user_id: str) -> tuple[dict,
         "status": val_status,
         "signal": validated_item,
         "validation_method": "CPCV (N=6, k=2, 15 paths) + PBO + DSR + BHY",
+        "strategy_definition": strategy_definition,
+        "data_summary": {
+            "ticker": req.ticker,
+            "start_date": req.startDate,
+            "end_date": req.endDate,
+            "observations": int(len(prices)),
+            "trade_days": int((signal != 0).sum()),
+            "turnover_events": int((signal.diff().abs() > 0).sum()),
+            "transaction_cost_rate": 0.0005,
+        },
         "validation_details": {
             "dsr": dsr_res.get("dsr"),
             "dsr_status": dsr_res.get("status"),

@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "ai": "^7.0.114",
     "better-auth": "^1.7.2",
     "drizzle-orm": "^0.45.2",
     "next": "16.3.1",
