@@ -197,7 +197,7 @@ const EMPTY_STATE: LiveMarketState = {
 };
 
 export function useLiveMarket() {
-  const [state, setState] = useState<LiveMarketState>(EMPTY_STATE);
+  const [state, setState] = useState<LiveMarketState>(DEFAULT_STATE);
   const [tickDirection, setTickDirection] = useState<TickDirection>({});
   const [isClient, setIsClient] = useState(false);
   const prevPricesRef = useRef<Record<string, number>>({});

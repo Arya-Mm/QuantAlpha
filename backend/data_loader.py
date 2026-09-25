@@ -6,13 +6,19 @@ REAL DATA ONLY: Raises ResearchDataUnavailable whenever a verified market data s
 """
 
 import os
+import sys
+from pathlib import Path
 import warnings
 import yfinance as yf
 import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from research_mode import ResearchDataUnavailable
+_backend_dir = Path(__file__).resolve().parent
+if str(_backend_dir) not in sys.path:
+    sys.path.insert(0, str(_backend_dir))
+
+from research_mode import ResearchDataUnavailable, is_research_mode
 
 CACHE_DIR = os.path.join(os.path.dirname(__file__), "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)

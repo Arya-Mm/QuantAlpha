@@ -36,11 +36,10 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     },
   },
-  ...(process.env.NODE_ENV === "development"
+  ...(process.env.NODE_ENV === "development" && process.env.V0_RUNTIME_URL
     ? {
         advanced: {
-          // Required by the cross-site v0 preview iframe. Without these
-          // attributes, login succeeds but the next request appears signed out.
+          // Required only by the cross-site v0 preview iframe.
           defaultCookieAttributes: {
             sameSite: "none" as const,
             secure: true,
