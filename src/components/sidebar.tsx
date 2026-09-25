@@ -18,6 +18,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/signals", label: "Factor Library", icon: "analytics" },
   { href: "/backtests", label: "Backtest Suite", icon: "history" },
   { href: "/portfolio", label: "Live Portfolio", icon: "account_balance_wallet" },
+  { href: "/agent-trading", label: "WhatsApp Bot", icon: "chat", badge: "AI BOT" },
   { href: "/data", label: "Data Sources", icon: "database" },
   { href: "/reports", label: "Audit Reports", icon: "description" },
   { href: "/command-center", label: "Live Monitor", icon: "terminal", badge: "LIVE" },

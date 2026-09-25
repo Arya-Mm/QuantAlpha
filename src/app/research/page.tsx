@@ -272,8 +272,8 @@ export default function Research() {
     <div className="bg-[#f5f5f2] text-stone-900 font-body-sm text-body-sm min-h-screen flex antialiased w-full relative">
       {/* Methodology Modal */}
       {showMethodologyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white border border-[#e5e5df] rounded-xl max-w-2xl w-full p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 top-0 left-0 w-screen h-screen z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="relative bg-white border border-[#e5e5df] rounded-xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto my-auto">
             <div className="flex items-center justify-between border-b border-[#e5e5df] pb-3">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-orange-600 text-2xl">menu_book</span>
@@ -347,8 +347,8 @@ export default function Research() {
 
       {/* Signal Details Modal */}
       {inspectingSignal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white border border-[#e5e5df] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 top-0 left-0 w-screen h-screen z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="relative bg-white border border-[#e5e5df] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl my-auto">
             <div className="sticky top-0 bg-white border-b border-[#e5e5df] p-6 z-10">
               <div className="flex items-start justify-between">
                 <div className="flex-1">

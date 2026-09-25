@@ -254,4 +254,69 @@ export async function runRealBacktest(params: {
 // pass the real CPCV + PBO + DSR pipeline.
 export const INITIAL_VALIDATED_SIGNALS: import("../types/quant").SignalItem[] = [];
 
+export async function fetchAgentTradingState() {
+  try {
+    const res = await fetch(`${API}/agent/trading/state`, { cache: "no-store" });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.error("Agent state fetch error:", err);
+  }
+  return null;
+}
+
+export async function sendAgentChatMessage(message: string, sender?: string) {
+  const res = await fetch(`${API}/agent/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, sender: sender || "WhatsApp User" }),
+  });
+  if (!res.ok) throw new Error(`Agent chat error: ${res.statusText}`);
+  return await res.json();
+}
+
+export async function deployAgentStrategy(data: {
+  strategyCode: string;
+  capitalAllocated?: number;
+  mode?: "WHATSAPP_APPROVAL" | "AUTONOMOUS";
+  stopLossPct?: number;
+  profitTargetPct?: number;
+}) {
+  const res = await fetch(`${API}/agent/deploy-strategy`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Deploy error: ${res.statusText}`);
+  return await res.json();
+}
+
+export async function fetchTelegramStatus() {
+  try {
+    const res = await fetch(`${API}/agent/telegram/status`, { cache: "no-store" });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.error("Telegram status fetch error:", err);
+  }
+  return null;
+}
+
+export async function configureTelegramBot(data: { botToken: string; botUsername?: string }) {
+  const res = await fetch(`${API}/agent/telegram/config`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Telegram config error: ${res.statusText}`);
+  return await res.json();
+}
+
+export async function broadcastTelegramTestSignal() {
+  const res = await fetch(`${API}/agent/telegram/broadcast-test`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) throw new Error(`Telegram broadcast error: ${res.statusText}`);
+  return await res.json();
+}
+
 
