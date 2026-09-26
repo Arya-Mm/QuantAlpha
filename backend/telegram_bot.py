@@ -143,7 +143,66 @@ class TelegramBotManager:
         }
         if reply_markup:
             params["reply_markup"] = reply_markup
-        self._api_call("sendMessage", params, request_timeout=6.0)
+        res = self._api_call("sendMessage", params, request_timeout=6.0)
+        # If Telegram rejected markdown parsing (e.g. unescaped symbol), retry with clean plain text
+        if not res or not res.get("ok"):
+            params.pop("parse_mode", None)
+            self._api_call("sendMessage", params, request_timeout=6.0)
+
+    def broadcast_mining_complete(
+        self,
+        direction: str,
+        factors: List[Dict[str, Any]],
+        stats: Optional[Dict[str, Any]] = None,
+        is_synthetic: bool = False,
+    ) -> None:
+        """Broadcasts factor evolution mining completion and statistics to all registered Telegram chats."""
+        if not self.bot_token or not self.registered_chats:
+            return
+
+        mode_str = "Demo (Synthetic Data)" if is_synthetic else "Live Research (NSE Data)"
+        approved_count = sum(1 for f in factors if f.get("validation_status") == "APPROVED")
+
+        lines = [
+            "🔬 *QuantAlpha Alpha Mining Execution Complete*",
+            "",
+            f"🎯 *Direction:* {direction}",
+            f"📡 *Mode:* {mode_str}",
+            f"🧬 *Evolved Factors:* {len(factors)} ({approved_count} Passed Quality Gates)",
+            "",
+        ]
+
+        for idx, f in enumerate(factors, start=1):
+            name = f.get("factor_name", f"FACTOR_{idx}")
+            phase = f.get("evolution_phase", "unknown").upper()
+            status = f.get("validation_status", "PENDING")
+            status_icon = "✅" if status == "APPROVED" else "⚠️"
+            ic = f.get("ic")
+            ic_str = f"{ic:.4f}" if ic is not None else "N/A"
+            dsr = f.get("dsr")
+            dsr_str = f"{dsr:.3f}" if dsr is not None else "N/A"
+            sharpe = f.get("sharpe_ratio")
+            sharpe_str = f"{sharpe:.2f}" if sharpe is not None else "N/A"
+
+            lines.append(f"{idx}. `{name}`")
+            lines.append(f"   • Phase: {phase} | {status_icon} *{status}*")
+            lines.append(f"   • IC: `{ic_str}` | Sharpe: `{sharpe_str}` | DSR: `{dsr_str}`")
+
+        total_factors = stats.get("total_factors", len(factors)) if stats else len(factors)
+        lines.append("")
+        lines.append(f"📚 *Total Library Capacity:* {total_factors} factors registered.")
+        lines.append("⚡ Available for strategy backtesting and live agent execution.")
+
+        text = "\n".join(lines)
+        markup = {
+            "inline_keyboard": [
+                [
+                    {"text": "📊 Portfolio Status", "callback_data": "STATUS"},
+                    {"text": "🚨 Latest Signals", "callback_data": "SIGNALS"},
+                ]
+            ]
+        }
+        self.send_message_to_all(text, markup)
 
     def _poll_loop(self) -> None:
         logger.info("Telegram Bot Polling Daemon started for @%s", self.bot_username)
@@ -201,7 +260,8 @@ class TelegramBotManager:
             keyboard = {
                 "keyboard": [
                     [{"text": "📊 Portfolio Status"}, {"text": "🚨 Alpha Signals"}],
-                    [{"text": "⚡ EXECUTE Signal"}, {"text": "🛑 KILL SWITCH"}],
+                    [{"text": "🔬 Mined Factors"}, {"text": "⚡ EXECUTE Signal"}],
+                    [{"text": "🛑 KILL SWITCH"}],
                 ],
                 "resize_keyboard": True,
             }

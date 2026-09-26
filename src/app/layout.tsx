@@ -30,6 +30,21 @@ export default function RootLayout({
     >
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined') {
+                window.addEventListener('unhandledrejection', function(e) {
+                  var s = (e && e.reason && (e.reason.stack || e.reason.message || String(e.reason))) || '';
+                  if (s.indexOf('chrome-extension://') !== -1 || s.indexOf('M_ID') !== -1) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                  }
+                }, true);
+              }
+            `,
+          }}
+        />
       </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col">{children}</body>
     </html>
