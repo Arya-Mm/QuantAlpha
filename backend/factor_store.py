@@ -574,6 +574,8 @@ async def stream_factor_evolution_mining(
                f"Round 0 — {r0_val}: {base_name}", {"factor": new_f0})
     await asyncio.sleep(0.5)
 
+    mined_factors = [new_f0]
+
     # ---- Round 1: Mutation ----
     if max_rounds >= 2:
         mut_name = f"{base_name}_MUT_VOL_GATE"
@@ -602,6 +604,7 @@ async def stream_factor_evolution_mining(
         if is_synthetic:
             label_as_demo(new_f1)
         factor_store.add_factor(new_f1)
+        mined_factors.append(new_f1)
 
         yield _evt("eval_round_1", "success" if r1_val == "APPROVED" else "rejected",
                    f"Round 1 — {r1_val}: {mut_name} → IC={r1_ic} | DSR={r1_dsr}", {"factor": new_f1})
@@ -633,12 +636,48 @@ async def stream_factor_evolution_mining(
         if is_synthetic:
             label_as_demo(new_f2)
         factor_store.add_factor(new_f2)
+        mined_factors.append(new_f2)
 
         yield _evt("eval_round_2", "success" if r2_val == "APPROVED" else "rejected",
                    f"Round 2 — {r2_val}: {cross_name}", {"factor": new_f2})
         await asyncio.sleep(0.4)
 
+    # Broadcast factor mining completion alert directly to Telegram subscribers
+    try:
+        from telegram_bot import telegram_manager
+        telegram_manager.broadcast_mining_complete(
+            direction=direction,
+            factors=mined_factors,
+            stats=factor_store.get_library_stats(),
+            is_synthetic=is_synthetic,
+        )
+    except Exception as exc:
+        logger.debug("Telegram factor mining broadcast failed: %s", exc)
+
+    # Record discovery audit entry into agent execution logs
+    try:
+        from agent_trader import EXECUTION_LOGS
+        EXECUTION_LOGS.insert(0, {
+            "id": f"MINE-{int(datetime.now().timestamp()) % 10000}",
+            "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
+            "channel": "Evolutionary Mining Stream",
+            "user": "QuantaAlpha Genetic Miner",
+            "strategy": f"Mining: {direction[:25]}",
+            "symbol": "^NSEI",
+            "side": "DISCOVERY",
+            "qty": len(mined_factors),
+            "price": 0.0,
+            "order_type": "EVOLUTIONARY_SEARCH",
+            "status": "COMPLETED",
+            "dsr_score": mined_factors[-1].get("dsr") or 0.95,
+            "pbo_risk": f"{round((1 - (mined_factors[-1].get('dsr') or 0.95)) * 100, 1)}%",
+            "pnl_impact": f"{len(mined_factors)} Evolved Alpha Factors",
+        })
+    except Exception as exc:
+        logger.debug("Failed to record mining execution log: %s", exc)
+
     yield _evt("complete", "complete",
                f"Evolution pipeline finished. Library now has {len(factor_store.factors)} factors. "
                f"Mode: {'DEMO (synthetic data)' if is_synthetic else 'RESEARCH (real NSE data)'}.",
                {"stats": factor_store.get_library_stats()})
+

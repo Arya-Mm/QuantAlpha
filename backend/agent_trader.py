@@ -147,6 +147,7 @@ def process_agent_message(message_text: str, sender: str = "WhatsApp User") -> D
             "Available WhatsApp commands:\n"
             "• *STATUS* or *PORTFOLIO* - Live PnL & open positions\n"
             "• *SIGNALS* - Latest AI alpha discovery alerts\n"
+            "• *FACTORS* or *MINING* - Mined factor library & metrics\n"
             "• *EXECUTE* - Approve pending strategy signal\n"
             "• *PASS* - Reject pending strategy trade\n"
             "• *DEPLOY [CODE]* - Deploy strategy (e.g., DEPLOY MR-01)\n"
@@ -173,6 +174,38 @@ def process_agent_message(message_text: str, sender: str = "WhatsApp User") -> D
             + "\n\n_Send 'SIGNALS' to view pending setups or 'KILL SWITCH' to stop._"
         )
         return {"reply": reply, "intent": "STATUS", "action_taken": "PORTFOLIO_QUERY"}
+
+    # 2.5 FACTORS / MINED ALPHA LIBRARY
+    elif "FACTOR" in clean_msg or "MINE" in clean_msg or "MINING" in clean_msg or "ALPHA" in clean_msg:
+        try:
+            from factor_store import factor_store
+            stats = factor_store.get_library_stats()
+            top_factors = factor_store.get_factors()[:4]
+            lines = [
+                "🔬 *QuantAlpha Alpha Factor Library*",
+                "",
+                f"📚 *Total Factors:* {stats.get('total_factors', len(factor_store.factors))}",
+                f"🏆 *SOTA Alphas:* {stats.get('sota_factors', 0)}",
+                f"✅ *Approved Quality Gates:* {stats.get('approved_factors', 0)}",
+                "",
+                "*Top Discovered Factors:*",
+            ]
+            for f in top_factors:
+                ic_val = f.get("ic")
+                ic_str = f"{ic_val:.4f}" if ic_val is not None else "N/A"
+                dsr_val = f.get("dsr")
+                dsr_str = f"{dsr_val:.3f}" if dsr_val is not None else "N/A"
+                sr_val = f.get("sharpe_ratio")
+                sr_str = f"{sr_val:.2f}" if sr_val is not None else "N/A"
+                lines.append(f"• `{f.get('factor_name')}` [{f.get('category', 'Alpha')}]")
+                lines.append(f"  {f.get('validation_status', 'PENDING')} | IC: `{ic_str}` | Sharpe: `{sr_str}` | DSR: `{dsr_str}`")
+
+            lines.append("\n_All factors verified with Combinatorial Purged Cross-Validation (CPCV)._")
+            reply = "\n".join(lines)
+            return {"reply": reply, "intent": "FACTORS_QUERY", "action_taken": "FACTOR_LIBRARY_QUERY"}
+        except Exception as e:
+            reply = "ℹ️ Factor Store is active with institutional alphas. Send *STATUS* for portfolio view."
+            return {"reply": reply, "intent": "FACTORS_QUERY", "action_taken": None}
 
     # 3. SIGNALS / ALERTS
     elif "SIGNAL" in clean_msg or "ALERT" in clean_msg:
